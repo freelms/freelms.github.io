@@ -73,8 +73,25 @@ function absImg(src, site) {
 
 // ---- Data layer: Admin SDK first, public REST fallback ----
 async function fetchAdmin(saJson) {
-  const admin = (await import('firebase-admin')).default;
-  const sa = JSON.parse(saJson);
+  let sa;
+  try {
+    sa = JSON.parse(saJson);
+  } catch {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT is not valid JSON (paste the whole key file, unedited).');
+  }
+  if (!sa.project_id || !sa.private_key || !sa.client_email) {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT JSON is missing project_id/private_key/client_email — re-download the key.');
+  }
+  let admin;
+  try {
+    const mod = await import('firebase-admin');
+    admin = mod.default ?? mod;
+  } catch (e) {
+    throw new Error(`firebase-admin import failed: ${e?.message ?? e}`);
+  }
+  if (!admin.apps || !admin.credential || !admin.firestore) {
+    throw new Error('firebase-admin import returned an unexpected shape.');
+  }
   if (admin.apps.length === 0) {
     admin.initializeApp({ credential: admin.credential.cert(sa), projectId: sa.project_id });
   }
@@ -214,7 +231,10 @@ async function main() {
   let courses = [];
   let via = '';
   try {
-    if (env.FIREBASE_SERVICE_ACCOUNT) {
+    const saRaw = env.FIREBASE_SERVICE_ACCOUNT || '';
+    // Safe diagnostic: length + shape only, never the content.
+    console.log(`[prerender] service-account secret: ${saRaw ? `present (${saRaw.length} chars, starts=${saRaw.trim().startsWith('{')})` : 'missing'}`);
+    if (saRaw) {
       ({ courses, via } = await fetchAdmin(env.FIREBASE_SERVICE_ACCOUNT));
     } else if (env.VITE_FIREBASE_PROJECT_ID && env.VITE_FIREBASE_API_KEY) {
       console.warn('[prerender] No FIREBASE_SERVICE_ACCOUNT — REST fallback (lessons stay private, syllabus may be empty).');
