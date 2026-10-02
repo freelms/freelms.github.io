@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
@@ -65,6 +65,18 @@ function CoursesTab() {
   const [uploadPct, setUploadPct] = useState(0);
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
+  const uploadTask = useRef<any>(null);
+
+  const friendlyStorageError = (e: any): string => {
+    const code = String(e?.code ?? '');
+    console.error('[thumbnail upload]', code, e);
+    if (code.includes('unauthorized')) return 'Upload denied by Storage rules — publish storage.rules (Firebase console → Storage → Rules).';
+    if (code.includes('unknown') || code.includes('not-found') || code.includes('bucket')) return 'Storage bucket unreachable — enable Firebase Storage first (console → Build → Storage → Get started).';
+    if (code.includes('retry-limit') || code.includes('network')) return 'Network stalled the upload (ad-blocker/VPN/CORS can do this). Try again or paste an image URL instead.';
+    if (code.includes('canceled')) return 'Upload cancelled.';
+    return 'Upload failed: ' + (e?.message ?? 'unknown error');
+  };
+
   const uploadThumbnail = async (file: File) => {
     if (!file.type.startsWith('image/')) { push('Pick an image file (PNG/JPG/WebP).'); return; }
     if (file.size > 2 * 1024 * 1024) { push('Image must be under 2MB.'); return; }
@@ -72,22 +84,45 @@ function CoursesTab() {
     if (!storage) { push('Storage not configured.'); return; }
     setUploading(true);
     setUploadPct(0);
+    const timer = setTimeout(() => {
+      try { uploadTask.current?.cancel?.(); } catch { /* ignore */ }
+      push('Upload timed out after 90s with no response — check: 1) Storage enabled in console, 2) storage.rules published, 3) ad-blocker/VPN off. URL paste works as fallback.');
+      setUploading(false);
+    }, 90_000);
     try {
-      const { ref, uploadBytesResumable, getDownloadURL } = await import('firebase/storage');
+      const { ref, uploadBytesResumable, uploadBytes, getDownloadURL } = await import('firebase/storage');
       const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const path = `thumbnails/${editing ?? 'pending'}/${user?.uid ?? 'admin'}_${Date.now()}_${safe}`;
-      const task = uploadBytesResumable(ref(storage, path), file, { contentType: file.type });
-      const url: string = await new Promise((resolve, reject) => {
-        task.on('state_changed',
-          (s) => setUploadPct(Math.round((s.bytesTransferred / s.totalBytes) * 100)),
-          reject,
-          async () => resolve(await getDownloadURL(task.snapshot.ref)));
-      });
+      const storageRef = ref(storage, path);
+      let url: string;
+      try {
+        const task = uploadBytesResumable(storageRef, file, { contentType: file.type });
+        uploadTask.current = task;
+        url = await new Promise<string>((resolve, reject) => {
+          task.on('state_changed',
+            (s) => setUploadPct(Math.round((s.bytesTransferred / s.totalBytes) * 100)),
+            reject,
+            async () => {
+              try { resolve(await getDownloadURL(task.snapshot.ref)); }
+              catch (err) { reject(err); }
+            });
+        });
+      } catch (resumeErr: any) {
+        // Resumable sessions can stall behind blockers — one single-shot retry.
+        const rc = String(resumeErr?.code ?? '');
+        if (rc.includes('canceled')) throw resumeErr;
+        console.warn('[thumbnail upload] resumable failed, single-shot retry:', rc);
+        const snap = await uploadBytes(storageRef, file, { contentType: file.type });
+        setUploadPct(100);
+        url = await getDownloadURL(snap.ref);
+      }
       set('thumbnail', url);
       push('Thumbnail uploaded');
     } catch (e: any) {
-      push('Upload failed: ' + (e?.message ?? 'storage may not be enabled'));
+      push(friendlyStorageError(e));
     } finally {
+      clearTimeout(timer);
+      uploadTask.current = null;
       setUploading(false);
     }
   };
@@ -118,7 +153,7 @@ function CoursesTab() {
           <input className="input" placeholder="Thumbnail URL (or upload below)" value={form.thumbnail ?? ''} onChange={(e) => set('thumbnail', e.target.value)} />
           {form.thumbnail && <img src={form.thumbnail} alt="thumbnail preview" className="h-28 w-full rounded-lg object-cover" />}
           <label className="btn-ghost cursor-pointer text-center">
-            {uploading ? `Uploading… ${uploadPct}%` : 'Select thumbnail image'}
+            {uploading ? `Uploading… ${uploadPct}% (tap Cancel to stop)` : 'Select thumbnail image'}
             <input type="file" className="hidden" accept="image/*" disabled={uploading} onChange={(e) => {
               const f = e.target.files?.[0];
               e.target.value = '';
@@ -126,8 +161,11 @@ function CoursesTab() {
             }} />
           </label>
           {uploading && (
-            <div className="h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-              <div className="h-full bg-indigo-600" style={{ width: `${uploadPct}%` }} />
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                <div className="h-full bg-indigo-600" style={{ width: `${uploadPct}%` }} />
+              </div>
+              <button className="text-xs underline" onClick={() => { try { uploadTask.current?.cancel?.(); } catch { /* ignore */ } }}>Cancel</button>
             </div>
           )}
           {form.thumbnail && (
