@@ -8,6 +8,9 @@ import type { Course, Lesson } from '../types';
 import { ReportForm } from '../components/ReportForm';
 import { resolveThumb } from '../lib/thumb';
 
+const shortTitle = (c: { seoTitle?: string; title: string }) =>
+  c.seoTitle?.trim() || (c.title.length <= 55 ? c.title : c.title.slice(0, 55).replace(/\s+\S*$/, ''));
+
 export default function CourseDetail() {
   const { id } = useParams();
   const [course, setCourse] = useState<Course | null>(null);
@@ -26,7 +29,7 @@ export default function CourseDetail() {
       if (snap.exists()) {
         const c = { id: snap.id, ...(snap.data() as any) } as Course;
         setCourse(c);
-        document.title = `${c.title} — Free Course | FreeLMS`;
+        document.title = `${shortTitle(c)} | FreeLMS`;
         const md = document.querySelector('meta[name="description"]');
         if (md) md.setAttribute('content', `Learn ${c.title} free on FreeLMS. ${c.description.slice(0, 140)}`);
         // canonical points at the prerendered static snapshot (SEO); + Course JSON-LD

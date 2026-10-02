@@ -60,7 +60,27 @@ function CoursesTab() {
   const { push } = useToast();
   const [form, setForm] = useState<Partial<Course>>({ ...emptyCourse });
   const [editing, setEditing] = useState<string | null>(null);
+  const [editLessons, setEditLessons] = useState<Lesson[]>([]);
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
+
+  // Lesson titles for the course being edited (SEO quality check).
+  useEffect(() => {
+    if (!db || !editing) { setEditLessons([]); return; }
+    getDocs(collection(db, 'courses', editing, 'lessons'))
+      .then((s) => setEditLessons(s.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Lesson[]))
+      .catch(() => setEditLessons([]));
+  }, [editing]);
+
+  const qualityIssues = (() => {
+    const out: string[] = [];
+    const d = String(form.description ?? '').trim();
+    if (d && d.length < 150) out.push(`Description is ${d.length} chars (<150) — thin for search results.`);
+    const oc = Array.isArray(form.outcomes) ? form.outcomes.filter(Boolean).length : 0;
+    if (oc < 3) out.push(`Only ${oc} learning outcome(s) (<3).`);
+    const bad = editLessons.filter((l) => !String(l.title ?? '').trim() || /^(untitled(\s+lesson)?|full\s+lesson)$/i.test(String(l.title).trim()));
+    if (bad.length) out.push(`${bad.length} lesson(s) untitled or "Full Lesson" — rename in the Lessons tab.`);
+    return out;
+  })();
 
   const save = async () => {
     if (!db || !form.title) { push('Title required'); return; }
@@ -93,6 +113,11 @@ function CoursesTab() {
             <p className="text-xs text-amber-600">⚠ SEO description is under 150 characters ({(form.seoDescription ?? '').length}) — search engines may truncate or rewrite it.</p>
           )}
           <input className="input" placeholder="Share image URL for social cards (optional — defaults to thumbnail)" value={form.shareImage ?? ''} onChange={(e) => set('shareImage', e.target.value)} aria-label="Share image" />
+          {qualityIssues.length > 0 && (
+            <ul className="rounded-lg bg-amber-50 border border-amber-200 p-2 text-xs text-amber-800 dark:bg-amber-950 dark:border-amber-800">
+              {qualityIssues.map((q, i) => <li key={i}>⚠ {q}</li>)}
+            </ul>
+          )}
           {form.thumbnail && (
             <button className="text-xs text-red-600 underline" onClick={() => set('thumbnail', '')}>Remove thumbnail</button>
           )}

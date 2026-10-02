@@ -64,6 +64,71 @@ const esc = (s) =>
   String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const day = (iso) => String(iso ?? '').slice(0, 10) || new Date().toISOString().slice(0, 10);
 
+// ---- SEO text pipeline ----
+// Timestamps like "00:35 - intro" (own lines or inline) add nothing for search.
+function stripTimestamps(s) {
+  let t = String(s ?? '').replace(/\r/g, '');
+  t = t.split('\n').filter((l) => !/^\s*\d{1,2}:\d{2}(\s*[-–—:.]|\s|$)/.test(l)).join('\n');
+  t = t.replace(/\d{1,2}:\d{2}\s*[-–—]\s*[^.\n]*?(?=\d{1,2}:\d{2}|[.\n]|$)/g, '');
+  t = t.replace(/(^|[\s(])\d{1,2}:\d{2}(?=[\s).,]|$)/g, '$1');
+  return t.replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+}
+// Obvious engagement-bait sentences ("subscribe", "comment below") read as spam to crawlers.
+function stripCta(s) {
+  return String(s ?? '')
+    .split(/(?<=[.!?\n])\s+/)
+    .filter((sn) => !/subscrib|comment\s+(below|down)|leave\s+a\s+comment|let\s+me\s+know\s+in\s+the\s+comments|like\s+(this\s+)?video|hit\s+the\s+bell|notifications|giveaway|follow\s+me/i.test(sn))
+    .join(' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+const cleanBody = (s) => stripCta(stripTimestamps(s));
+
+/** Meta description: seoDescription wins; else first sentences, ≤155 chars at a boundary. */
+function metaDescription(c) {
+  const custom = String(c.seoDescription ?? '').trim();
+  if (custom) return custom.length <= 160 ? custom : custom.slice(0, 154).replace(/\s+\S*$/, '') + '…';
+  const text = cleanBody(c.description).replace(/\s+/g, ' ').trim();
+  if (text.length <= 155) return text;
+  const cut = text.slice(0, 155);
+  const sentence = cut.match(/^(.*?[.!?])\s/);
+  if (sentence && sentence[1].length > 60) return sentence[1];
+  return cut.replace(/\s+\S*$/, '') + '…';
+}
+
+/** Short title: seoTitle wins; else course title cut at 55 chars, word boundary. */
+function shortTitle(c) {
+  const custom = String(c.seoTitle ?? '').trim();
+  if (custom) return custom;
+  const t = String(c.title ?? '').trim();
+  if (t.length <= 55) return t;
+  return t.slice(0, 55).replace(/\s+\S*$/, '');
+}
+
+/** Body paragraphs from the cleaned description. */
+function bodyParas(c) {
+  const parts = cleanBody(c.description).split(/\n\s*\n/).map((p) => p.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  const fallback = cleanBody(c.description).replace(/\s+/g, ' ').trim();
+  const list = parts.length ? parts : fallback ? [fallback] : [];
+  return list.map((p) => `<p>${esc(p)}</p>`).join('\n');
+}
+
+/** Per-course SEO quality warnings, printed at build time and shown in /admin. */
+function qualityWarnings(c) {
+  const w = [];
+  if (!String(c.seoTitle ?? '').trim()) w.push('no seoTitle (title auto-cut at 55 chars)');
+  if (!String(c.seoDescription ?? '').trim()) w.push('no seoDescription (auto-generated)');
+  const d = cleanBody(c.description).replace(/\s+/g, ' ').trim();
+  if (d.length < 150) w.push(`clean description only ${d.length} chars (<150)`);
+  const outcomes = c.outcomes ?? [];
+  if (outcomes.length < 3) w.push(`only ${outcomes.length} learning outcome(s) (<3)`);
+  const bad = (c._lessons ?? []).filter((l) => !String(l.title ?? '').trim() || /^(untitled(\s+lesson)?|full\s+lesson)$/i.test(String(l.title).trim()));
+  if (bad.length) w.push(`${bad.length} lesson(s) untitled or "Full Lesson"`);
+  if (!c.shareImage && !c.thumbnail) w.push('no share image/thumbnail');
+  if (!(c.credits ?? []).length) w.push('no credits');
+  return w;
+}
+
 /** Absolute URL for a thumbnail/share image (repo thumbs/ paths resolve against site). */
 function absImg(src, site) {
   if (!src) return '';
@@ -162,8 +227,8 @@ async function fetchRest(projectId, key) {
 
 // ---- Snapshot template ----
 function coursePage(c, all, site) {
-  const title = c.seoTitle || c.title;
-  const desc = c.seoDescription || c.description || '';
+  const title = shortTitle(c);
+  const meta = metaDescription(c);
   const url = `${site}course/${c.id}/`;
   const appLink = `${site}#/course/${c.id}`;
   const img = absImg(c.shareImage || c.thumbnail, site);
@@ -181,10 +246,23 @@ function coursePage(c, all, site) {
     '@context': 'https://schema.org',
     '@type': 'Course',
     name: c.title,
-    description: String(desc).slice(0, 500),
+    description: meta,
     url,
     ...(img ? { image: img } : {}),
-    provider: { '@type': 'Organization', name: 'FreeLMS', sameAs: site }
+    provider: { '@type': 'Organization', name: 'FreeLMS', sameAs: site },
+    ...(lessons.length
+      ? {
+          hasPart: {
+            '@type': 'ItemList',
+            numberOfItems: lessons.length,
+            itemListElement: lessons.map((l, i) => ({
+              '@type': 'ListItem',
+              position: i + 1,
+              name: l.title
+            }))
+          }
+        }
+      : {})
   };
   const ldCrumb = {
     '@context': 'https://schema.org',
@@ -200,18 +278,18 @@ function coursePage(c, all, site) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>${esc(title)} — Free Course | FreeLMS</title>
-<meta name="description" content="${esc(String(desc).slice(0, 160))}" />
+<title>${esc(title)} | FreeLMS</title>
+<meta name="description" content="${esc(meta)}" />
 <link rel="canonical" href="${esc(url)}" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="FreeLMS" />
-<meta property="og:title" content="${esc(title)} — Free Course" />
-<meta property="og:description" content="${esc(String(desc).slice(0, 200))}" />
+<meta property="og:title" content="${esc(title)} | FreeLMS" />
+<meta property="og:description" content="${esc(meta)}" />
 <meta property="og:url" content="${esc(url)}" />
 ${img ? `<meta property="og:image" content="${esc(img)}" />` : ''}
 <meta name="twitter:card" content="${img ? 'summary_large_image' : 'summary'}" />
-<meta name="twitter:title" content="${esc(title)} — Free Course" />
-<meta name="twitter:description" content="${esc(String(desc).slice(0, 200))}" />
+<meta name="twitter:title" content="${esc(title)} | FreeLMS" />
+<meta name="twitter:description" content="${esc(meta)}" />
 ${img ? `<meta name="twitter:image" content="${esc(img)}" />` : ''}
 <script type="application/ld+json">${JSON.stringify(ldCourse)}</script>
 <script type="application/ld+json">${JSON.stringify(ldCrumb)}</script>
@@ -222,12 +300,12 @@ ${img ? `<meta name="twitter:image" content="${esc(img)}" />` : ''}
 <h1>${esc(title)} — free online course</h1>
 ${img ? `<img class="hero" src="${esc(img)}" alt="${esc(c.title)}" />` : ''}
 <p><strong>Topic:</strong> ${esc(c.topic ?? '')} · <strong>Instructor:</strong> ${esc(c.instructor ?? '')}${c.level ? ` · <strong>Level:</strong> ${esc(c.level)}` : ''} · <strong>Lessons:</strong> ${lessons.length}</p>
-<p>${esc(desc).replace(/\n/g, '<br>')}</p>
+${bodyParas(c)}
 <p><a class="cta" href="${esc(appLink)}">Start this free course</a></p>
 ${outcomes ? `<h2>What you'll learn</h2><ul>${outcomes}</ul>` : ''}
 <h2>Syllabus (${lessons.length} lessons)</h2>
 <ol>${syllabus || '<li>Lessons coming soon.</li>'}</ol>
-${credits ? `<h2>Video credits</h2><ul>${credits}</ul>` : ''}
+${credits ? `<h2>Credits and sources</h2><ul>${credits}</ul><p>Videos are embedded from their original creators — please support them directly.</p>` : ''}
 ${related.length ? `<h2>Related courses</h2><ul>${related.map((r) => `<li><a href="${site}course/${r.id}/">${esc(r.title)} — free course</a></li>`).join('')}</ul>` : ''}
 <p><a href="${site}">Browse all free courses</a></p>
 </body>
@@ -288,6 +366,8 @@ async function main() {
     const dir = join(courseDir, c.id);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, 'index.html'), coursePage(c, courses, site));
+    const w = qualityWarnings(c);
+    console.log(`[prerender] course/${c.id}/ — ${w.length ? 'WARNINGS: ' + w.join('; ') : 'OK'}`);
   }
 
   // Sitemap: real URLs only (no hash fragments), lastmod per course.
