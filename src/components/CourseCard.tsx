@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
 import type { Course } from '../types';
+import { resolveThumb } from '../lib/thumb';
 
 export function CourseCard({ c, enrolled, progress, bookmarked, onBookmark }: {
   c: Course; enrolled?: boolean; progress?: number; bookmarked?: boolean; onBookmark?: () => void;
@@ -9,7 +10,7 @@ export function CourseCard({ c, enrolled, progress, bookmarked, onBookmark }: {
     <div className="card overflow-hidden">
       <Link to={`/course/${c.id}`} aria-label={c.title}>
         {c.thumbnail
-          ? <img src={c.thumbnail} alt="" className="h-32 w-full object-cover" loading="lazy" />
+          ? <img src={resolveThumb(c.thumbnail)} alt="" className="h-32 w-full object-cover" loading="lazy" />
           : <div className="grid h-32 w-full place-items-center bg-indigo-50 text-indigo-600 dark:bg-slate-800">FreeLMS</div>}
       </Link>
       <div className="p-3">

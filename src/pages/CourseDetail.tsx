@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import type { Course, Lesson } from '../types';
 import { ReportForm } from '../components/ReportForm';
+import { resolveThumb } from '../lib/thumb';
 
 export default function CourseDetail() {
   const { id } = useParams();
@@ -91,7 +92,7 @@ export default function CourseDetail() {
   return (
     <div className="mx-auto max-w-4xl px-3 py-4">
       <div className="card overflow-hidden">
-        {course.thumbnail && <img src={course.thumbnail} alt="" className="h-52 w-full object-cover" />}
+        {course.thumbnail && <img src={resolveThumb(course.thumbnail)} alt="" className="h-52 w-full object-cover" />}
         <div className="p-4">
           <div className="flex flex-wrap items-center gap-2">
             <span className="chip bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">{course.topic}</span>
