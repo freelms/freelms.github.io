@@ -72,7 +72,12 @@ function absImg(src, site) {
 }
 
 // ---- Data layer: Admin SDK first, public REST fallback ----
-async function fetchAdmin(saJson) {
+// ---- Data layer: service-account REST (zero deps) first, public REST fallback ----
+
+// Exchange a service-account key for a short-lived OAuth2 access token using
+// only node:crypto + fetch — no firebase-admin needed (its transitive deps
+// broke CI installs). The Bearer token bypasses API-key domain restrictions.
+async function serviceAccountToken(saJson) {
   let sa;
   try {
     sa = JSON.parse(saJson);
@@ -82,59 +87,67 @@ async function fetchAdmin(saJson) {
   if (!sa.project_id || !sa.private_key || !sa.client_email) {
     throw new Error('FIREBASE_SERVICE_ACCOUNT JSON is missing project_id/private_key/client_email — re-download the key.');
   }
-  let initializeApp, cert, getApps, getFirestore;
-  try {
-    // firebase-admin v14+ is modular: firebase-admin/app + firebase-admin/firestore
-    const appMod = await import('firebase-admin/app');
-    ({ getFirestore } = await import('firebase-admin/firestore'));
-    ({ initializeApp, cert, getApps } = appMod);
-  } catch (e) {
-    throw new Error(`firebase-admin import failed: ${e?.message ?? e}`);
-  }
-  if (!initializeApp || !cert || !getApps || !getFirestore) {
-    throw new Error('firebase-admin install looks broken (missing app/firestore entry points) — reinstall devDependencies.');
-  }
-  if (getApps().length === 0) {
-    initializeApp({ credential: cert(sa), projectId: sa.project_id });
-  }
-  const db = getFirestore();
-  const snap = await db.collection('courses').get();
+  const { createSign } = await import('node:crypto');
+  const now = Math.floor(Date.now() / 1000);
+  const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
+  const unsigned = `${b64({ alg: 'RS256', typ: 'JWT', kid: sa.private_key_id })}.${b64({
+    iss: sa.client_email,
+    scope: 'https://www.googleapis.com/auth/datastore',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600
+  })}`;
+  const sig = createSign('RSA-SHA256').update(unsigned).sign(sa.private_key, 'base64url');
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: `${unsigned}.${sig}` })
+  });
+  if (!res.ok) throw new Error(`OAuth2 token exchange failed (HTTP ${res.status}) — key may be revoked; generate a fresh one.`);
+  const j = await res.json();
+  if (!j.access_token) throw new Error('OAuth2 token exchange returned no token.');
+  return { token: j.access_token, projectId: sa.project_id };
+}
+
+async function restDocs(projectId, path, auth) {
+  const headers = auth?.headers ?? { 'X-Goog-Api-Key': auth.key };
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${path}?pageSize=200` +
+    (auth?.key ? `&key=${auth.key}` : '');
+  const res = await fetch(url, { headers });
+  if (!res.ok) throw new Error(`Firestore REST ${res.status} for ${path}`);
+  const j = await res.json();
+  return (j.documents ?? []).map((d) => {
+    const fields = {};
+    for (const [k, v] of Object.entries(d.fields ?? {})) fields[k] = rval(v);
+    return { id: d.name.split('/').pop(), ...fields };
+  });
+}
+
+async function fetchServiceAccount(saJson) {
+  const { token, projectId } = await serviceAccountToken(saJson);
+  const auth = { headers: { Authorization: `Bearer ${token}` } };
+  const snap = await restDocs(projectId, 'courses', auth);
   const courses = [];
-  for (const d of snap.docs) {
-    const c = { id: d.id, ...d.data() };
+  for (const c of snap) {
     if (c.status !== 'published') continue; // drafts/archived never prerendered
-    const ls = await db.collection('courses').doc(d.id).collection('lessons').get();
+    const ls = await restDocs(projectId, `courses/${c.id}/lessons`, auth);
     // Explicit allowlist: title/duration/order only — NEVER video IDs.
-    c._lessons = ls.docs
-      .map((l) => {
-        const x = l.data();
-        return { id: l.id, title: x.title ?? 'Untitled lesson', duration: x.duration ?? '', order: x.order ?? 0 };
-      })
+    c._lessons = ls
+      .map((l) => ({ id: l.id, title: l.title ?? 'Untitled lesson', duration: l.duration ?? '', order: l.order ?? 0 }))
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-    c._updated = c.updatedAt?.toDate?.()?.toISOString?.() ?? c.createdAt?.toDate?.()?.toISOString?.() ?? new Date().toISOString();
+    c._updated = c.updatedAt ?? c.createdAt ?? new Date().toISOString();
     courses.push(c);
   }
-  return { courses, via: 'admin-sdk' };
+  return { courses, via: 'service-account' };
 }
 
 async function fetchRest(projectId, key) {
-  const get = async (path) => {
-    const res = await fetch(
-      `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${path}?pageSize=200&key=${key}`
-    );
-    if (!res.ok) throw new Error(`Firestore REST ${res.status} for ${path}`);
-    const j = await res.json();
-    return (j.documents ?? []).map((d) => {
-      const fields = {};
-      for (const [k, v] of Object.entries(d.fields ?? {})) fields[k] = rval(v);
-      return { id: d.name.split('/').pop(), ...fields };
-    });
-  };
-  const all = await get('courses');
+  const auth = { key };
+  const all = await restDocs(projectId, 'courses', auth);
   const courses = all.filter((c) => c.status === 'published');
   for (const c of courses) {
     try {
-      const ls = await get(`courses/${c.id}/lessons`);
+      const ls = await restDocs(projectId, `courses/${c.id}/lessons`, auth);
       c._lessons = ls
         .map((l) => ({ id: l.id, title: l.title ?? 'Untitled lesson', duration: l.duration ?? '', order: l.order ?? 0 }))
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -237,7 +250,8 @@ async function main() {
     // Safe diagnostic: length + shape only, never the content.
     console.log(`[prerender] service-account secret: ${saRaw ? `present (${saRaw.length} chars, starts=${saRaw.trim().startsWith('{')})` : 'missing'}`);
     if (saRaw) {
-      ({ courses, via } = await fetchAdmin(env.FIREBASE_SERVICE_ACCOUNT));
+      via = 'service-account';
+      ({ courses } = await fetchServiceAccount(saRaw));
     } else if (env.VITE_FIREBASE_PROJECT_ID && env.VITE_FIREBASE_API_KEY) {
       console.warn('[prerender] No FIREBASE_SERVICE_ACCOUNT — REST fallback (lessons stay private, syllabus may be empty).');
       ({ courses, via } = await fetchRest(env.VITE_FIREBASE_PROJECT_ID, env.VITE_FIREBASE_API_KEY));
