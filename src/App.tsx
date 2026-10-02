@@ -16,7 +16,6 @@ import Home from './pages/Home';
 import CourseDetail from './pages/CourseDetail';
 import Learn from './pages/Learn';
 import Admin from './pages/Admin';
-import Certificate from './pages/Certificate';
 import Profile from './pages/Profile';
 import Paths from './pages/Paths';
 import { StaticPage } from './pages/Static';
@@ -52,7 +51,6 @@ export default function App() {
                   <Route path="/course/:id" element={<ErrorBoundary><CourseDetail /></ErrorBoundary>} />
                   <Route path="/learn/:id" element={<ErrorBoundary><ProtectedRoute><Learn /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/admin" element={<ErrorBoundary><AdminRoute><Admin /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/certificate/:certificateId" element={<ErrorBoundary><Certificate /></ErrorBoundary>} />
                   <Route path="/profile" element={<ErrorBoundary><ProtectedRoute><Profile /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/paths" element={<ErrorBoundary><Paths /></ErrorBoundary>} />
                   <Route path="/privacy" element={<StaticPage kind="privacy" />} />

@@ -81,6 +81,5 @@ export interface Note { id: string; content: string; updatedAt?: any; }
 export interface Announcement { id: string; message: string; courseId?: string; expiresAt?: any; createdAt?: any; }
 export interface Report { id: string; courseId?: string; lessonId?: string; reason: string; details: string; email: string; resolved?: boolean; createdAt?: any; }
 export interface LearnPath { id: string; title: string; description: string; courseIds: string[]; }
-export interface CertDoc { courseId?: string; certificateId: string; studentName: string; courseTitle: string; issuedAt?: any; }
 export interface UserProfile { uid: string; name?: string; email?: string; photo?: string; status?: string; createdAt?: any; streakDays?: string[]; badges?: string[]; lastActiveAt?: any; }
 export interface CourseComment { id: string; courseId: string; lessonId: string; uid: string; displayName?: string; text: string; createdAt?: any; reported?: boolean; hidden?: boolean; }

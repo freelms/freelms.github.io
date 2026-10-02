@@ -95,7 +95,7 @@ function DeleteAccount() {
           const cred = EmailAuthProvider.credential(user.email!, pw);
           await reauthenticateWithCredential(auth.currentUser, cred);
         }
-        for (const sub of ['enrollments', 'quizAttempts', 'notes', 'bookmarks', 'certificates']) {
+        for (const sub of ['enrollments', 'quizAttempts', 'notes', 'bookmarks']) {
           const s = await getDocs(collection(db, 'users', user.uid, sub));
           for (const d of s.docs) await deleteDoc(d.ref);
         }
@@ -104,7 +104,7 @@ function DeleteAccount() {
         location.hash = '#/';
       } catch (err: any) { alert(err.message); }
     }}>
-      <p className="text-slate-500">Deletes profile, enrollments, notes, attempts, certificates and your login. Type DELETE to confirm.</p>
+      <p className="text-slate-500">Deletes profile, enrollments, notes, attempts and your login. Type DELETE to confirm.</p>
       <input className="input" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="DELETE" aria-label="Confirm" />
       <input className="input" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Password (email accounts)" aria-label="Password" />
       <button className="btn-primary !bg-red-600">Delete everything</button>

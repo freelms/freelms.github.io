@@ -10,7 +10,7 @@ export function CourseCard({ c, enrolled, progress, bookmarked, onBookmark }: {
       <Link to={`/course/${c.id}`} aria-label={c.title}>
         {c.thumbnail
           ? <img src={c.thumbnail} alt="" className="h-32 w-full object-cover" loading="lazy" />
-          : <div className="grid h-32 w-full place-items-center bg-indigo-50 text-indigo-600 dark:bg-slate-800">LearnHub</div>}
+          : <div className="grid h-32 w-full place-items-center bg-indigo-50 text-indigo-600 dark:bg-slate-800">FreeLMS</div>}
       </Link>
       <div className="p-3">
         <div className="flex items-center gap-1.5">

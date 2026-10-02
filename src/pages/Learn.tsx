@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { doc, getDoc, getDocs, collection, setDoc, serverTimestamp, addDoc, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
@@ -34,7 +34,6 @@ export default function Learn() {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [savedTick, setSavedTick] = useState(0);
   const [allNotesQ, setAllNotesQ] = useState('');
-  const [certId, setCertId] = useState<string | null>(null);
 
   const lesson = useMemo(() => lessons.find((l) => l.id === lessonId) ?? lessons[0], [lessons, lessonId]);
   const done = enroll?.completedLessons ?? [];
@@ -50,7 +49,7 @@ export default function Learn() {
       if (c.exists()) {
         const cd = { id: c.id, ...(c.data() as any) } as Course;
         setCourse(cd);
-        document.title = `Learn: ${cd.title} | LearnHub`;
+        document.title = `Learn: ${cd.title} | FreeLMS`;
       }
       const ls = await getDocs(collection(db, 'courses', id, 'lessons'));
       const arr = (ls.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Lesson[])
@@ -75,9 +74,6 @@ export default function Learn() {
         const next = arr.find((l) => !((en.data() as any)?.completedLessons ?? []).includes(l.id));
         setLessonId((next ?? arr[0]).id);
       }
-      // cert check
-      const cert = await getDoc(doc(db, 'users', user.uid, 'certificates', id));
-      if (cert.exists()) setCertId((cert.data() as any).certificateId);
     })();
   }, [id, user]);
 
@@ -160,22 +156,6 @@ export default function Learn() {
     const xs = attempts.filter((a) => a.quizId === qid);
     return xs.length ? xs.reduce((m, a) => Math.max(m, a.score), 0) : null;
   };
-  const eligible = lessons.length > 0 && done.length === lessons.length &&
-    quizzes.every((qz) => attempts.some((a) => a.quizId === qz.id && a.score >= qz.passingScore));
-
-  const claimCert = async () => {
-    if (!db || !user || !course || !id) return;
-    const certificateId = Math.random().toString(36).slice(2, 10).toUpperCase();
-    await setDoc(doc(db, 'users', user.uid, 'certificates', id), {
-      certificateId, studentName: user.displayName ?? user.email, courseTitle: course.title, issuedAt: serverTimestamp()
-    });
-    await setDoc(doc(db, 'certificates_public', certificateId), {
-      certificateId, studentName: user.displayName ?? user.email, courseTitle: course.title, issuedAt: serverTimestamp()
-    });
-    setCertId(certificateId);
-    push('Certificate issued!');
-  };
-
   // notes autosave
   const saveNote = async (lid: string, content: string) => {
     if (!db || !user || !id) return;
@@ -194,9 +174,6 @@ export default function Learn() {
           <h1 className="truncate text-sm font-bold">{course.title}</h1>
           <p className="text-xs text-slate-500">{done.length}/{lessons.length} lessons · {pct}%</p>
         </div>
-        {eligible && !certId && <button className="btn-primary" onClick={claimCert}>Get certificate</button>}
-        {certId && <Link to={`/certificate/${certId}`} className="btn-ghost">View certificate</Link>}
-        {!eligible && <span className="hidden text-xs text-slate-500 sm:inline">Complete all lessons + pass all quizzes for a certificate</span>}
       </div>
 
       <div className="mt-3 flex gap-1.5 overflow-x-auto" role="tablist">

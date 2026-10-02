@@ -25,9 +25,9 @@ export function Navbar({ onSearch }: { onSearch: () => void }) {
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/90 backdrop-blur dark:bg-slate-950/90 dark:border-slate-800">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-3">
-        <Link to="/" className="flex items-center gap-2 font-bold" aria-label="LearnHub home">
+        <Link to="/" className="flex items-center gap-2 font-bold" aria-label="FreeLMS home">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-600 text-white"><GraduationCap size={18} /></span>
-          <span className="hidden sm:inline">LearnHub</span>
+          <span className="hidden sm:inline">FreeLMS</span>
         </Link>
         <nav className="ml-2 hidden items-center gap-1 text-sm md:flex">
           <Link to="/" className="rounded-lg px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">Catalog</Link>

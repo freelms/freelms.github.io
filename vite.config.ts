@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'LearnHub — Free Training Platform',
-        short_name: 'LearnHub',
+        name: 'FreeLMS — Free Training Platform',
+        short_name: 'FreeLMS',
         description: 'Free for everyone. No ads.',
         theme_color: '#4f46e5',
         background_color: '#ffffff',

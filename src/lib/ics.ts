@@ -38,14 +38,14 @@ export function downloadICS(entries: ScheduleEntry[], courseTitle: string) {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//LearnHub//Schedule//EN'
+    'PRODID:-//FreeLMS//Schedule//EN'
   ];
   entries.forEach((e, i) => {
     const date = nextDateFor(e.day);
     const { start, end } = parseTime(e);
     lines.push(
       'BEGIN:VEVENT',
-      `UID:${Date.now()}-${i}@learnhub`,
+      `UID:${Date.now()}-${i}@freelms`,
       `DTSTAMP:${date}T000000Z`,
       `DTSTART:${date}T${start}00`,
       `DTEND:${date}T${end}00`,

@@ -47,18 +47,6 @@ service cloud.firestore {
       match /bookmarks/{courseId} {
         allow read, write: if isOwner(uid) || isAdmin();
       }
-      match /certificates/{courseId} {
-        allow read: if isOwner(uid) || isAdmin();
-        allow create, update: if isOwner(uid);
-        allow delete: if isOwner(uid) || isAdmin();
-      }
-    }
-
-    // public certificate lookup by certificateId (collection + query)
-    match /certificates_public/{certId} {
-      allow read: if true;
-      allow create: if signedIn() && request.resource.data.certificateId == certId;
-      allow update, delete: if false;
     }
 
     match /paths/{pathId} {

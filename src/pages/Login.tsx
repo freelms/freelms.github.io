@@ -37,7 +37,7 @@ export default function Login() {
   return (
     <div className="mx-auto mt-10 max-w-md px-3">
       <div className="card p-6">
-        <h1 className="text-lg font-bold">Welcome to LearnHub</h1>
+        <h1 className="text-lg font-bold">Welcome to FreeLMS</h1>
         <p className="text-sm text-slate-500">Free training for everyone.</p>
         <button className="btn-ghost mt-4 w-full" disabled={busy} onClick={async () => {
           setBusy(true); setErr('');

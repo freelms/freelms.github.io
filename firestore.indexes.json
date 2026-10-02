@@ -12,11 +12,6 @@
         { "fieldPath": "courseId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
-    },
-    {
-      "collectionGroup": "certificates",
-      "queryScope": "COLLECTION",
-      "fields": [{ "fieldPath": "certificateId", "order": "ASCENDING" }]
     }
   ],
   "fieldOverrides": []

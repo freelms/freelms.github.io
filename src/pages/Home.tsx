@@ -25,7 +25,7 @@ export default function Home({ lessonsByCourse, setLessons }: {
   const mine = params.get('mine') === '1';
   const savedOnly = params.get('saved') === '1';
   useEffect(() => { setShown(12); }, [q, topic, mine, savedOnly]);
-  useEffect(() => { document.title = 'LearnHub — Free Online Courses & Video Training Platform'; }, []);
+  useEffect(() => { document.title = 'FreeLMS — Free Online Courses & Video Training Platform'; }, []);
 
   useEffect(() => {
     (async () => {
@@ -95,15 +95,14 @@ export default function Home({ lessonsByCourse, setLessons }: {
 
   return (
     <div className="mx-auto max-w-6xl px-3 py-4">
-      <section className="card overflow-hidden" aria-label="About LearnHub">
+      <section className="card overflow-hidden" aria-label="About FreeLMS">
         <div className="bg-gradient-to-r from-indigo-600 to-violet-600 p-6 text-white sm:p-8">
           <h1 className="max-w-2xl text-2xl font-bold leading-tight sm:text-3xl">
             Free Online Courses for Everyone. Learn Anything, at Your Pace.
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-indigo-100">
-            LearnHub is a free online courses platform with curated video training, lesson-by-lesson
-            progress tracking, quizzes with instant feedback, personal notes and certificates of
-            completion. No fees. No ads. Just learning — from web development and freelancing to
+            FreeLMS is a free online courses platform with curated video training, lesson-by-lesson
+            progress tracking, quizzes with instant feedback and personal notes. No fees. No ads. Just learning — from web development and freelancing to
             everyday digital skills.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -113,7 +112,7 @@ export default function Home({ lessonsByCourse, setLessons }: {
           <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-indigo-100">
             <li>✓ 100% free, forever</li>
             <li>✓ Learn from top creators (always credited)</li>
-            <li>✓ Quizzes, notes &amp; certificates included</li>
+            <li>✓ Quizzes, notes &amp; progress tracking included</li>
           </ul>
         </div>
       </section>
@@ -174,9 +173,9 @@ export default function Home({ lessonsByCourse, setLessons }: {
 }
 
 const FAQS = [
-  { q: 'Is LearnHub really free?', a: 'Yes. Every course on LearnHub is 100% free, forever. No fees, no ads, no paywalled lessons.' },
+  { q: 'Is FreeLMS really free?', a: 'Yes. Every course on FreeLMS is 100% free, forever. No fees, no ads, no paywalled lessons.' },
   { q: 'How do courses work?', a: 'Each course is a curated series of video lessons with a weekly timetable, quizzes with instant feedback, personal notes and a progress tracker. Enroll once, learn at your own pace.' },
-  { q: 'Do I get a certificate?', a: 'Yes. Finish 100% of lessons and pass every quiz in a course to unlock a free, verifiable certificate of completion you can share or print as PDF.' },
+  { q: 'How is my progress saved?', a: 'Enroll free with your account and every lesson you complete, quiz attempt and note is saved automatically, so you can continue learning on any device.' },
   { q: 'Who creates the videos?', a: 'Lessons embed videos from independent creators using the official YouTube player. Every creator is credited with channel and original-video links — we never re-upload their work.' }
 ];
 
@@ -199,7 +198,7 @@ function SeoFaq() {
     <section className="card mt-6 p-4 sm:p-6" aria-label="Frequently asked questions">
       <h2 className="text-base font-bold">Free online courses — questions, answered</h2>
       <p className="mt-1 text-sm text-slate-500">
-        New to online learning? LearnHub makes it simple: pick a free course below, enroll in one click,
+        New to online learning? FreeLMS makes it simple: pick a free course below, enroll in one click,
         and your progress, quiz scores and notes are saved automatically.
       </p>
       <div className="mt-3 space-y-2">

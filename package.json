@@ -1,5 +1,5 @@
 {
-  "name": "learnhub",
+  "name": "freelms",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -20,9 +20,7 @@
     "react-router-dom": "^6.26.2",
     "lucide-react": "^0.441.0",
     "recharts": "^2.12.7",
-    "@sentry/react": "^8.28.0",
-    "html2canvas": "^1.4.1",
-    "jspdf": "^2.5.1"
+    "@sentry/react": "^8.28.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",

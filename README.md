@@ -1,4 +1,4 @@
-# LearnHub — free online training platform
+# FreeLMS — free online training platform
 
 React + Vite + TypeScript + Tailwind + React Router (HashRouter, base `./`) + Firebase (Auth + Firestore). Static `dist/` uploaded to your own server. No Firebase Hosting.
 
