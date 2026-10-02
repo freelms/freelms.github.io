@@ -87,6 +87,12 @@ function CoursesTab() {
           </div>
           <input className="input" placeholder="Thumbnail URL, e.g. thumbs/name.jpg or https://…" value={form.thumbnail ?? ''} onChange={(e) => set('thumbnail', e.target.value)} />
           {form.thumbnail && <img src={resolveThumb(form.thumbnail)} alt="thumbnail preview" className="h-28 w-full rounded-lg object-cover" />}
+          <input className="input" placeholder="SEO title (optional — defaults to course title)" value={form.seoTitle ?? ''} onChange={(e) => set('seoTitle', e.target.value)} aria-label="SEO title" />
+          <textarea className="input" placeholder="SEO description (optional, 150+ chars recommended)" value={form.seoDescription ?? ''} onChange={(e) => set('seoDescription', e.target.value)} aria-label="SEO description" />
+          {(form.seoDescription ?? '').length > 0 && (form.seoDescription ?? '').length < 150 && (
+            <p className="text-xs text-amber-600">⚠ SEO description is under 150 characters ({(form.seoDescription ?? '').length}) — search engines may truncate or rewrite it.</p>
+          )}
+          <input className="input" placeholder="Share image URL for social cards (optional — defaults to thumbnail)" value={form.shareImage ?? ''} onChange={(e) => set('shareImage', e.target.value)} aria-label="Share image" />
           {form.thumbnail && (
             <button className="text-xs text-red-600 underline" onClick={() => set('thumbnail', '')}>Remove thumbnail</button>
           )}

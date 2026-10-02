@@ -12,14 +12,12 @@ service cloud.firestore {
     function isEnrolled(courseId) {
       return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)/enrollments/$(courseId));
     }
-    // Public catalog for SEO: published courses (and their syllabi) are readable
-    // without login. Videos stay gated by the app (enrollment required for /learn),
-    // quizzes stay enrolled-only. Note: lesson reads do one extra get() for the parent.
+    // Public catalog for SEO: ONLY published course documents are readable
+    // without login (title/description/outcomes for snapshots + sitemap).
+    // Lessons, quizzes and drafts are never public: the prerender build reads
+    // them with the Firebase Admin SDK, and snapshots contain titles/durations
+    // only — never video IDs.
     function isPublishedCourse() { return resource.data.status == 'published' || resource.data.published == true; }
-    function parentPublished(courseId) {
-      return get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'published'
-        || get(/databases/$(database)/documents/courses/$(courseId)).data.published == true;
-    }
 
     match /admins/{uid} {
       allow read: if signedIn();
@@ -32,8 +30,8 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
 
       match /lessons/{lessonId} {
-        // syllabus (titles/durations) is public for published courses; the player page still requires enrollment
-        allow read: if parentPublished(courseId) || isAdmin() || (notDisabled() && isEnrolled(courseId));
+        // never public — the player page requires enrollment
+        allow read: if isAdmin() || (notDisabled() && isEnrolled(courseId));
         allow write: if isAdmin();
       }
       match /quizzes/{quizId} {

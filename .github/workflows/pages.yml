@@ -3,6 +3,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Daily rebuild so prerendered course snapshots + sitemap stay fresh.
+    - cron: '0 3 * * *'
 permissions:
   contents: read
   pages: write
@@ -20,9 +23,15 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       # .env.production is committed (public Firebase web keys by design) so the
-      # Pages build works with no secrets. Do NOT add an env: block with empty
-      # secrets here — empty values would override .env.production and break the build.
+      # Pages build works with no secrets. FIREBASE_SERVICE_ACCOUNT (service
+      # account JSON) unlocks full prerender data (lessons/syllabi); without it
+      # the prerender falls back to public REST reads.
+      # TODO(first-course): set ALLOW_ZERO_COURSES back to 'false' once a
+      # course is published — a zero-course result then fails the build loudly.
       - run: npm run build
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          ALLOW_ZERO_COURSES: 'true'
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }
   deploy:

@@ -25,6 +25,9 @@ export interface Course {
   totalDuration?: string;
   enrollmentCount?: number;
   completionCount?: number;
+  seoTitle?: string;
+  seoDescription?: string;
+  shareImage?: string;
   createdAt?: any;
   updatedAt?: any;
 }

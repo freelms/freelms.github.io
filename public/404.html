@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Page not found | FreeLMS</title>
+<meta name="robots" content="noindex" />
+</head>
+<body>
+<h1>Page not found</h1>
+<p><a id="home" href="./">Back to FreeLMS home</a></p>
+<noscript><p>Enable JavaScript to use FreeLMS — free online courses for everyone.</p></noscript>
+<script>
+(function () {
+  // Missing trailing slash on a prerendered course page (/course/abc -> /course/abc/)
+  var p = location.pathname;
+  if (!p.endsWith('/')) {
+    var probe = new XMLHttpRequest();
+    probe.open('HEAD', p + '/', true);
+    probe.onload = function () {
+      if (probe.status < 400) location.replace(p + '/' + location.search + location.hash);
+    };
+    try { probe.send(); } catch (e) { /* stay on 404 */ }
+  }
+})();
+</script>
+</body>
+</html>

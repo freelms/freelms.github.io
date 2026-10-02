@@ -30,7 +30,7 @@ export default function CourseDetail() {
         const md = document.querySelector('meta[name="description"]');
         if (md) md.setAttribute('content', `Learn ${c.title} free on FreeLMS. ${c.description.slice(0, 140)}`);
         // canonical points at the prerendered static snapshot (SEO); + Course JSON-LD
-        const base = (import.meta.env.VITE_APP_URL ?? '').replace(/\/?$/, '/');
+        const base = (import.meta.env.SITE_URL ?? import.meta.env.VITE_APP_URL ?? '').replace(/\/?$/, '/');
         if (base) {
           let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
           if (!link) { link = document.createElement('link'); link.rel = 'canonical'; document.head.appendChild(link); }

@@ -37,13 +37,13 @@ describe('rules', () => {
     const admin = env.authenticatedContext('admin1', { email: 'shariqq.com@gmail.com' });
     await assertSucceeds(setDoc(doc(admin.firestore(), 'courses', 'c1'), { title: 'x', status: 'draft' }));
   });
-  it('allows public to read published courses and their lessons', async () => {
+  it('allows public to read published course docs, but not lessons', async () => {
     const admin = env.authenticatedContext('admin1', { email: 'shariqq.com@gmail.com' });
     await assertSucceeds(setDoc(doc(admin.firestore(), 'courses/pub1'), { title: 'Free Course', status: 'published' }));
     await assertSucceeds(setDoc(doc(admin.firestore(), 'courses/pub1/lessons/l1'), { title: 'Intro', videoId: 'dQw4w9WgXcQ' }));
     const anon = env.unauthenticatedContext();
     await assertSucceeds(getDoc(doc(anon.firestore(), 'courses/pub1')));
-    await assertSucceeds(getDoc(doc(anon.firestore(), 'courses/pub1/lessons/l1')));
+    await assertFails(getDoc(doc(anon.firestore(), 'courses/pub1/lessons/l1')));
   });
   it('blocks public from draft courses', async () => {
     const admin = env.authenticatedContext('admin1', { email: 'shariqq.com@gmail.com' });
