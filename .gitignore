@@ -6,3 +6,5 @@ dist
 firebase-debug.log
 firestore-debug.log
 *.log
+# local-only junk: never deploy/push (private keys, dumps, videos live here)
+public/thumbs/Downloads/

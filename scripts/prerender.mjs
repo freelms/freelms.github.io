@@ -115,7 +115,7 @@ async function main() {
   const env = loadEnv();
   const projectId = env.VITE_FIREBASE_PROJECT_ID;
   const key = env.VITE_FIREBASE_API_KEY;
-  let appUrl = env.VITE_APP_URL ?? 'https://freelms.github.io/freelms/';
+  let appUrl = env.VITE_APP_URL ?? 'https://freelms.github.io/';
   if (!appUrl.endsWith('/')) appUrl += '/';
   if (!projectId || !key) {
     console.warn('[prerender] No Firebase project/key in env — skipping (dist keeps static sitemap).');
