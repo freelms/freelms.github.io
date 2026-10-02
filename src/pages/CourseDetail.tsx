@@ -25,6 +25,9 @@ export default function CourseDetail() {
       if (snap.exists()) {
         const c = { id: snap.id, ...(snap.data() as any) } as Course;
         setCourse(c);
+        document.title = `${c.title} — Free Course | LearnHub`;
+        const md = document.querySelector('meta[name="description"]');
+        if (md) md.setAttribute('content', `Learn ${c.title} free on LearnHub. ${c.description.slice(0, 140)}`);
         if (c.prerequisiteIds?.length) {
           const ps: Course[] = [];
           for (const pid of c.prerequisiteIds) {

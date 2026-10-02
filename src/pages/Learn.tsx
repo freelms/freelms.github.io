@@ -47,7 +47,11 @@ export default function Learn() {
       if (!en.exists()) { nav(`/course/${id}`); return; }
       setEnroll({ ...(en.data() as any) });
       const c = await getDoc(doc(db, 'courses', id));
-      if (c.exists()) setCourse({ id: c.id, ...(c.data() as any) } as Course);
+      if (c.exists()) {
+        const cd = { id: c.id, ...(c.data() as any) } as Course;
+        setCourse(cd);
+        document.title = `Learn: ${cd.title} | LearnHub`;
+      }
       const ls = await getDocs(collection(db, 'courses', id, 'lessons'));
       const arr = (ls.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Lesson[])
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
