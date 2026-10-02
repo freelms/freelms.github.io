@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 const config = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -16,11 +17,13 @@ export const hasFirebaseConfig = Boolean(config.apiKey && config.projectId);
 let app: any = undefined;
 let auth: any = undefined;
 let db: any = undefined;
+let storage: any = undefined;
 
 if (hasFirebaseConfig) {
   app = initializeApp(config);
   auth = getAuth(app);
   db = getFirestore(app);
+  storage = getStorage(app);
   if (location.hostname === 'localhost') {
     // Uncomment to use emulators locally:
     // import('firebase/auth').then(m => m.connectAuthEmulator(auth, 'http://localhost:9099'));
@@ -28,4 +31,4 @@ if (hasFirebaseConfig) {
   }
 }
 
-export { app, auth, db };
+export { app, auth, db, storage };
