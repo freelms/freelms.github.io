@@ -24,14 +24,50 @@ React + Vite + TypeScript + Tailwind + React Router (HashRouter, base `./`) + Fi
 - Samples: `nginx.conf.sample`, `apache.conf.sample` (long cache for `/assets/*`, no-cache for `index.html`).
 - CI: `.github/workflows/ci.yml` — lint/type/build on PR; on `main` deploys rules + rsync. Secrets: `FIREBASE_PROJECT`, `FIREBASE_TOKEN` (`npx firebase-tools login:ci`), `DEPLOY_HOST/USER/PATH/KEY`.
 
+## Admin guide (how to add courses)
+
+Sign in with the admin account → open `/admin`. Only admins see this page.
+
+**Recommended workflow for a new course:** Courses (create as `draft`) → Lessons (add videos) → Quizzes (add quiz) → back to Courses (Edit → `published` → Save). Drafts are invisible to students; `published` appears in the catalog; `archived` hides it again.
+
+### Courses tab — the course form
+- **Title / Description** — shown on the card + detail page. Write 150+ characters of description (used for Google results).
+- **Topic** — becomes the filter chip on the home page (e.g. `Web Development`). Keep a short, consistent list.
+- **Instructor** — display name shown under the title.
+- **Thumbnail URL** — paste `thumbs/your-file.jpg` (image committed to `public/thumbs/`) or any `https://…` image. Preview appears instantly.
+- **SEO title / SEO description / Share image** (optional) — override what Google + social cards show for this course. A warning appears if the SEO description is under 150 characters.
+- **Status** — `draft` (hidden), `published` (live in catalog + included in sitemap/prerender), `archived` (hidden, keeps student progress).
+- **Level** — Beginner / Intermediate / Advanced badge on the card.
+- **Timezone** — shown next to the timetable (e.g. `Asia/Karachi`).
+- **Outcomes** — one per line → "What you'll learn" list.
+- **Prerequisites** — comma-separated course IDs → "Recommended before this course" box.
+- **Credits JSON** — `[{creator, channelUrl, videoUrl}]` → "Credits and sources" section. Always credit video owners.
+- **Schedule JSON** — `[{day, time, topic, link}]` → weekly Timetable tab with Google-Calendar + `.ics` export.
+- Right column per course: **Edit**, **Preview as student** (opens the public page), **Duplicate** (copies course + its lessons + quizzes), **Delete**.
+
+### Lessons tab — videos
+1. Pick the course. 2. Type the lesson title, paste a YouTube URL or ID (thumbnail preview auto-appears). 3. Optionally set creator name, channel URL and resources JSON (`[{label, url, type}]` → "Resources" box under the video). 4. Add lesson — or paste many URLs (one per line) with **Add all**. Reorder with ↑ ↓, check all videos are still embeddable with **Check videos** (broken ones get a red badge for students too).
+
+### Quizzes tab
+Pick a course → paste quiz JSON (or **Upload .json**) → attach to a lesson for a "Quick check" under that video, or leave unattached for a full-course quiz → Save. **Download sample JSON** shows the exact schema; **Copy AI prompt** gives a prompt that makes Gemini/Claude output valid quiz JSON from a transcript.
+
+### Other tabs
+- **Analytics** — enrollments/completions per course, 30-day enrollment chart, average quiz scores, hardest-questions table (from wrong-answer counts).
+- **Students** — searchable + paginated, with enrolled-course count, avg progress, last active; disable account or mute from commenting.
+- **Announce** — global or per-course banner with expiry; students dismiss it (remembered per user).
+- **Reports** — student takedown/error reports from course/video pages; toggle resolved.
+- **Moderation** — reported discussion posts: hide, delete, dismiss, or ban the author from commenting.
+- **Paths** — group course IDs into a named learning path shown on `/paths` with progress.
+- **Import** — paste one full-course JSON (course + lessons + quizzes) → preview counts → one batched import. Sample + AI prompt buttons included.
+
 ## Data model & reads (E16)
 
 - `courses/{id}` — course doc (`status: draft|published|archived`, denormalized `lessonCount`, `enrollmentCount`). List cached in memory + `sessionStorage` (60s TTL).
 - `courses/{id}/lessons/{lid}` — enrolled/admin only. Titles prefetched once for search palette.
 - `courses/{id}/quizzes/{qid}` — enrolled/admin only.
-- `users/{uid}` + subcollections `enrollments`, `quizAttempts`, `notes`, `bookmarks`, `certificates` — owner/admin only.
+- `users/{uid}` + subcollections `enrollments`, `quizAttempts`, `notes`, `bookmarks` — owner/admin only.
 - `stats/{courseId}` — `{enrollmentCount, completionCount}` aggregates (one read per course on admin analytics).
-- `certificates_public/{certId}` — public cert lookup. `announcements`, `paths`, `reports` as documented.
+- `announcements`, `paths`, `reports`, `comments` as documented in the admin guide.
 - No `onSnapshot` except where needed; no N+1 beyond one-per-course lesson prefetch.
 
 ## Rules tests / emulators
