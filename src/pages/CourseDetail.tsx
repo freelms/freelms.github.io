@@ -28,6 +28,24 @@ export default function CourseDetail() {
         document.title = `${c.title} — Free Course | FreeLMS`;
         const md = document.querySelector('meta[name="description"]');
         if (md) md.setAttribute('content', `Learn ${c.title} free on FreeLMS. ${c.description.slice(0, 140)}`);
+        // canonical points at the prerendered static snapshot (SEO); + Course JSON-LD
+        const base = (import.meta.env.VITE_APP_URL ?? '').replace(/\/?$/, '/');
+        if (base) {
+          let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+          if (!link) { link = document.createElement('link'); link.rel = 'canonical'; document.head.appendChild(link); }
+          link.href = `${base}course/${c.id}/`;
+        }
+        if (!document.getElementById('course-jsonld')) {
+          const s = document.createElement('script');
+          s.id = 'course-jsonld';
+          s.type = 'application/ld+json';
+          s.textContent = JSON.stringify({
+            '@context': 'https://schema.org', '@type': 'Course', name: c.title,
+            description: c.description.slice(0, 500),
+            provider: { '@type': 'Organization', name: 'FreeLMS' }
+          });
+          document.head.appendChild(s);
+        }
         if (c.prerequisiteIds?.length) {
           const ps: Course[] = [];
           for (const pid of c.prerequisiteIds) {
