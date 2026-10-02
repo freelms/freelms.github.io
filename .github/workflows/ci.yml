@@ -1,0 +1,44 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - run: npx firebase-tools emulators:exec --only firestore "npx vitest run tests/rules.test.ts"
+  deploy:
+    if: github.ref == 'refs/heads/main' && secrets.DEPLOY_HOST != ''
+    needs: [check, rules]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - run: npm run build
+      - name: Deploy Firestore rules
+        run: npx firebase-tools deploy --only firestore:rules --project ${{ secrets.FIREBASE_PROJECT }} --token ${{ secrets.FIREBASE_TOKEN }}
+      - name: Upload dist via rsync
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: -avz --delete
+          path: dist/
+          remote_path: ${{ secrets.DEPLOY_PATH }}
+          remote_host: ${{ secrets.DEPLOY_HOST }}
+          remote_user: ${{ secrets.DEPLOY_USER }}
+          remote_key: ${{ secrets.DEPLOY_KEY }}

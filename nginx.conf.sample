@@ -1,0 +1,25 @@
+# nginx sample — serve /path/to/dist over HTTPS
+server {
+  listen 443 ssl http2;
+  server_name learn.yourdomain.com;
+  root /var/www/learnhub;
+  index index.html;
+
+  ssl_certificate /etc/letsencrypt/live/learn.yourdomain.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/learn.yourdomain.com/privkey.pem;
+
+  gzip on;
+  gzip_types text/css application/javascript image/svg+xml application/json;
+
+  # hashed assets: long cache
+  location /assets/ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+  }
+
+  # SPA fallback (HashRouter doesn't strictly need rewrites, but harmless)
+  location / {
+    try_files $uri $uri/ /index.html;
+    add_header Cache-Control "no-cache";
+  }
+}

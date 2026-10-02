@@ -1,0 +1,23 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "enrollments",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "enrolledAt", "order": "DESCENDING" }]
+    },
+    {
+      "collectionGroup": "quizAttempts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "courseId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "certificates",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "certificateId", "order": "ASCENDING" }]
+    }
+  ],
+  "fieldOverrides": []
+}

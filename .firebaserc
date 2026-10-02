@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "alm-hub",
+    "dev": "alm-hub",
+    "prod": "alm-hub"
+  }
+}

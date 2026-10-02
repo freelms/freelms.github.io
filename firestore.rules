@@ -1,0 +1,91 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isAdminEmail() { return signedIn() && request.auth.token.email == 'shariqq.com@gmail.com'; }
+    function isAdmin() { return isAdminEmail() || (signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid))); }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function me() { return exists(/databases/$(database)/documents/users/$(request.auth.uid)) ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data : {}; }
+    function notDisabled() { return isAdmin() || (signedIn() && (!('status' in me()) || me().status != 'disabled')); }
+    function canComment() { return isAdmin() || (notDisabled() && (!('commenting' in me()) || me().commenting != 'off')); }
+    function isEnrolled(courseId) {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)/enrollments/$(courseId));
+    }
+
+    match /admins/{uid} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /courses/{courseId} {
+      // published courses readable by anyone signed in; drafts/archived only admins
+      allow read: if notDisabled() && (resource.data.status == 'published' || resource.data.published == true || isAdmin() || isEnrolled(courseId));
+      allow create, update, delete: if isAdmin();
+
+      match /lessons/{lessonId} {
+        allow read: if isAdmin() || isEnrolled(courseId);
+        allow write: if isAdmin();
+      }
+      match /quizzes/{quizId} {
+        allow read: if isAdmin() || isEnrolled(courseId);
+        allow write: if isAdmin();
+      }
+    }
+
+    match /users/{uid} {
+      allow read, write: if isOwner(uid) || isAdmin();
+      match /enrollments/{courseId} {
+        allow read, write: if isOwner(uid) || isAdmin();
+      }
+      match /quizAttempts/{attemptId} {
+        allow read, write: if isOwner(uid) || isAdmin();
+      }
+      match /notes/{noteId} {
+        allow read, write: if isOwner(uid) || isAdmin();
+      }
+      match /bookmarks/{courseId} {
+        allow read, write: if isOwner(uid) || isAdmin();
+      }
+      match /certificates/{courseId} {
+        allow read: if isOwner(uid) || isAdmin();
+        allow create, update: if isOwner(uid);
+        allow delete: if isOwner(uid) || isAdmin();
+      }
+    }
+
+    // public certificate lookup by certificateId (collection + query)
+    match /certificates_public/{certId} {
+      allow read: if true;
+      allow create: if signedIn() && request.resource.data.certificateId == certId;
+      allow update, delete: if false;
+    }
+
+    match /paths/{pathId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /announcements/{annId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /reports/{reportId} {
+      allow create: if notDisabled();
+      allow read, update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /comments/{commentId} {
+      allow read: if notDisabled();
+      allow create: if canComment() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+    }
+
+    match /stats/{courseId} {
+      allow read: if signedIn();
+      allow write: if isAdmin() || signedIn();
+    }
+  }
+}
