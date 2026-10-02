@@ -82,20 +82,22 @@ async function fetchAdmin(saJson) {
   if (!sa.project_id || !sa.private_key || !sa.client_email) {
     throw new Error('FIREBASE_SERVICE_ACCOUNT JSON is missing project_id/private_key/client_email — re-download the key.');
   }
-  let admin;
+  let initializeApp, cert, getApps, getFirestore;
   try {
-    const mod = await import('firebase-admin');
-    admin = mod.default ?? mod;
+    // firebase-admin v14+ is modular: firebase-admin/app + firebase-admin/firestore
+    const appMod = await import('firebase-admin/app');
+    ({ getFirestore } = await import('firebase-admin/firestore'));
+    ({ initializeApp, cert, getApps } = appMod);
   } catch (e) {
     throw new Error(`firebase-admin import failed: ${e?.message ?? e}`);
   }
-  if (!admin.apps || !admin.credential || !admin.firestore) {
-    throw new Error('firebase-admin import returned an unexpected shape.');
+  if (!initializeApp || !cert || !getApps || !getFirestore) {
+    throw new Error('firebase-admin install looks broken (missing app/firestore entry points) — reinstall devDependencies.');
   }
-  if (admin.apps.length === 0) {
-    admin.initializeApp({ credential: admin.credential.cert(sa), projectId: sa.project_id });
+  if (getApps().length === 0) {
+    initializeApp({ credential: cert(sa), projectId: sa.project_id });
   }
-  const db = admin.firestore();
+  const db = getFirestore();
   const snap = await db.collection('courses').get();
   const courses = [];
   for (const d of snap.docs) {
