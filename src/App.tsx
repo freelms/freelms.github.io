@@ -20,6 +20,7 @@ import Learn from './pages/Learn';
 import Admin from './pages/Admin';
 import Profile from './pages/Profile';
 import Paths from './pages/Paths';
+import Metrics from './pages/Metrics';
 import { StaticPage } from './pages/Static';
 
 initSentry();
@@ -56,6 +57,7 @@ export default function App() {
                   <Route path="/learn/:id" element={<ErrorBoundary><ProtectedRoute><Learn /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/admin" element={<ErrorBoundary><AdminRoute><Admin /></AdminRoute></ErrorBoundary>} />
                   <Route path="/profile" element={<ErrorBoundary><ProtectedRoute><Profile /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/metrics" element={<ErrorBoundary><ProtectedRoute><Metrics /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/paths" element={<ErrorBoundary><Paths /></ErrorBoundary>} />
                   <Route path="/privacy" element={<StaticPage kind="privacy" />} />
                   <Route path="/terms" element={<StaticPage kind="terms" />} />
