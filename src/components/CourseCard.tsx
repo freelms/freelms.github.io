@@ -6,16 +6,21 @@ import { resolveThumb } from '../lib/thumb';
 export function CourseCard({ c, enrolled, progress, bookmarked, onBookmark }: {
   c: Course; enrolled?: boolean; progress?: number; bookmarked?: boolean; onBookmark?: () => void;
 }) {
+  const displayTags = c.tags?.slice(0, 2) || (c.topic ? [{ slug: '', name: c.topic, color: undefined }] : []);
   return (
     <div className="card overflow-hidden">
       <Link to={`/course/${c.id}`} aria-label={c.title}>
         {c.thumbnail
-          ? <img src={resolveThumb(c.thumbnail)} alt="" className="h-32 w-full object-cover" loading="lazy" />
+          ? <img src={c.thumbnail} alt="" className="h-32 w-full object-cover" loading="lazy" />
           : <div className="grid h-32 w-full place-items-center bg-indigo-50 text-indigo-600 dark:bg-slate-800">FreeLMS</div>}
       </Link>
       <div className="p-3">
-        <div className="flex items-center gap-1.5">
-          <span className="chip bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">{c.topic}</span>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {displayTags.map((tag, i) => (
+            <span key={i} className="chip" style={{ backgroundColor: tag.color ? `${tag.color}20` : undefined, color: tag.color || undefined }}>
+              {tag.name}
+            </span>
+          ))}
           {c.level && <span className="chip">{c.level}</span>}
           {enrolled && <span className="chip bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300">Enrolled</span>}
           <button onClick={onBookmark} aria-label="Bookmark" className="ml-auto rounded p-1 hover:bg-slate-100 dark:hover:bg-slate-800">
