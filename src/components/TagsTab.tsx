@@ -5,6 +5,29 @@ import { useToast } from '../hooks/useToast';
 import type { Tag, Course } from '../types';
 import { slugify } from '../lib/slug';
 
+export async function recalcCounts(db: any, tags: Tag[], push: (msg: string) => void) {
+  if (!db || !confirm('Recalculate all tag counts from published courses?')) return;
+  try {
+    const coursesSnap = await getDocs(query(collection(db, 'courses'), where('status', '==', 'published')));
+    const counts: Record<string, number> = {};
+    coursesSnap.docs.forEach(d => {
+      const c = d.data() as any;
+      (c.tagSlugs || []).forEach((slug: string) => {
+        counts[slug] = (counts[slug] || 0) + 1;
+      });
+    });
+    const batch = writeBatch(db);
+    for (const tag of tags) {
+      if (counts[tag.slug] !== undefined && counts[tag.slug] !== (tag.courseCount || 0)) {
+        batch.update(doc(db, 'tags', tag.id), { courseCount: counts[tag.slug] });
+      }
+    }
+    await batch.commit();
+  } catch (e: any) {
+    throw new Error('Recalc failed: ' + e.message);
+  }
+}
+
 export function TagsTab() {
   const { push } = useToast();
   const [tags, setTags] = useState<Tag[]>([]);
@@ -23,6 +46,9 @@ export function TagsTab() {
   };
   useEffect(() => { reload(); }, []);
 
+  const slugify = (s: string) =>
+    s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
   const save = async () => {
     if (!db || !form.name) { push('Name required'); return; }
     const slug = editing ? editing : slugify(form.name);
@@ -37,7 +63,7 @@ export function TagsTab() {
         : (tags.find(t => t.id === editing)?.slugHistory || []),
       updatedAt: new Date()
     };
-    if (editing) await updateDoc(doc(db, 'tags', editing), payload);
+    if (editing) await updateDoc(doc(db, 'tags', editing), payload as any);
     else await addDoc(collection(db, 'tags'), { ...payload, createdAt: new Date(), courseCount: 0 });
     setForm({ name: '', description: '', color: '#4f46e5', icon: 'book-open', parentSlug: '', showInMenu: false, featured: false, seoTitle: '', seoDescription: '' });
     setEditing(null); reload(); push('Saved');
@@ -47,31 +73,6 @@ export function TagsTab() {
     if (!confirm('Delete tag? This will remove it from all courses.')) return;
     await deleteDoc(doc(db, 'tags', id));
     push('Deleted');
-  };
-
-  const recalcCounts = async () => {
-    if (!db || !confirm('Recalculate all tag counts from published courses?')) return;
-    try {
-      const coursesSnap = await getDocs(query(collection(db, 'courses'), where('status', '==', 'published')));
-      const counts: Record<string, number> = {};
-      coursesSnap.docs.forEach(d => {
-        const c = d.data() as any;
-        (c.tagSlugs || []).forEach((slug: string) => {
-          counts[slug] = (counts[slug] || 0) + 1;
-        });
-      });
-      const batch = writeBatch(db);
-      for (const tag of tags) {
-        if (counts[tag.slug] !== undefined && counts[tag.slug] !== (tag.courseCount || 0)) {
-          batch.update(doc(db, 'tags', tag.id), { courseCount: counts[tag.slug] });
-        }
-      }
-      await batch.commit();
-      push('Tag counts recalculated');
-      reload();
-    } catch (e: any) {
-      push('Recalc failed: ' + e.message);
-    }
   };
 
   const parentOptions = (editing ? tags.filter(t => !t.parentSlug && t.id !== editing) : tags.filter(t => !t.parentSlug)).map(t => ({ id: t.id, name: t.name }));
@@ -106,7 +107,7 @@ export function TagsTab() {
       <div className="space-y-2">
         <div className="flex gap-2 mb-2">
           <input className="input max-w-xs" placeholder="Search tags…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search tags" />
-          <button className="btn-ghost" onClick={() => { if (confirm('Recalculate all tag counts from published courses?')) { recalcCounts(); } }}>Recalculate counts</button>
+          <button className="btn-ghost" onClick={() => { if (confirm('Recalculate all tag counts from published courses?')) { recalcCounts(db, tags, push); } }}>Recalculate counts</button>
         </div>
         {tags.filter(t => t.name.toLowerCase().includes(search.toLowerCase())).map((t) => (
           <div key={t.id} className="card flex items-center gap-2 p-3 text-sm">

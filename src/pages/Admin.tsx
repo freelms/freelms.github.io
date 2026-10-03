@@ -9,7 +9,7 @@ import { validateQuizJson } from '../components/Quiz';
 import { SAMPLE_QUIZ_JSON, SAMPLE_COURSE_JSON, QUIZ_AI_PROMPT, COURSE_AI_PROMPT } from '../lib/samples';
 
 import { ModerationTab } from '../components/Comments';
-import { TagsTab } from '../components/TagsTab';
+import { TagsTab, recalcCounts } from '../components/TagsTab';
 import { TagMultiSelect } from '../components/TagMultiSelect';
 
 type Tab = 'courses' | 'lessons' | 'quizzes' | 'analytics' | 'students' | 'announce' | 'reports' | 'moderation' | 'paths' | 'import' | 'tags';
@@ -102,7 +102,9 @@ function CoursesTab() {
     };
     if (editing) await updateDoc(doc(db, 'courses', editing), payload as any);
     else await addDoc(collection(db, 'courses'), { ...payload, createdAt: serverTimestamp(), lessonCount: 0 });
-    setForm({ ...emptyCourse }); setEditing(null); reload(); push('Saved');
+    setForm({ ...emptyCourse }); setEditing(null); reload();
+    await recalcCounts(db, tagsList, push);
+    push('Saved');
   };
 
   return (
