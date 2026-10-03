@@ -72,32 +72,56 @@ export function QuizRunner({ quiz, courseId, onDone }: { quiz: Quiz; courseId: s
 
   if (finished) {
     const passed = finished.score >= quiz.passingScore;
+    const correct = Math.round((finished.score / 100) * finished.total);
+    const R = 34;
+    const C = 2 * Math.PI * R;
     return (
-      <div className="card p-4">
-        <h3 className="font-semibold">{quiz.title} — {finished.score}% {passed ? '🎉' : ''}</h3>
-        <p className="text-sm text-slate-500">Passing: {quiz.passingScore}% · {missedOnly ? 'Missed-only retry' : 'Full attempt'}</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button className="btn-primary" onClick={onDone}>Back to quizzes</button>
-          <button className="btn-ghost" onClick={() => { setAnswers([]); setIdx(0); setPicked(null); setFinished(null); setMissedOnly(false); setQueue(order.map((_, i) => i)); }}>Retry</button>
-          <button className="btn-ghost" onClick={() => {
-            // retry missed only
-            const missed = queue.filter((oi, k) => answers[k] !== order[oi].answer);
-            if (missed.length === 0) return;
-            setQueue(missed); setAnswers([]); setIdx(0); setPicked(null); setFinished(null); setMissedOnly(true);
-          }}>Retry missed only</button>
+      <div className="card overflow-hidden">
+        <div className={`p-6 text-center ${passed ? 'bg-gradient-to-b from-emerald-50 to-transparent dark:from-emerald-950/40' : 'bg-gradient-to-b from-rose-50 to-transparent dark:from-rose-950/40'}`}>
+          <div className="relative mx-auto h-28 w-28" role="img" aria-label={`Score ${finished.score} percent`}>
+            <svg viewBox="0 0 84 84" className="h-28 w-28 -rotate-90">
+              <circle cx="42" cy="42" r={R} fill="none" strokeWidth="9" className="stroke-slate-200 dark:stroke-slate-800" />
+              <circle cx="42" cy="42" r={R} fill="none" strokeWidth="9" strokeLinecap="round"
+                className={passed ? 'stroke-emerald-500' : 'stroke-rose-500'}
+                strokeDasharray={C} strokeDashoffset={C - (C * finished.score) / 100} />
+            </svg>
+            <span className="absolute inset-0 grid place-items-center text-2xl font-extrabold">{finished.score}<span className="text-sm font-semibold text-slate-400">%</span></span>
+          </div>
+          <h3 className="mt-3 text-lg font-extrabold tracking-tight">
+            {passed ? 'Passed — nicely done 🎉' : 'Not quite — keep going'}
+          </h3>
+          <p className="mt-1 text-sm text-slate-500">
+            {quiz.title} · {correct}/{finished.total} correct · passing {quiz.passingScore}% · {missedOnly ? 'Missed-only retry' : 'Full attempt'}
+          </p>
+          <div className="mx-auto mt-4 flex max-w-md flex-wrap justify-center gap-2">
+            <button className="btn-primary" onClick={onDone}>Back to quizzes</button>
+            <button className="btn-ghost" onClick={() => { setAnswers([]); setIdx(0); setPicked(null); setFinished(null); setMissedOnly(false); setQueue(order.map((_, i) => i)); }}>Retry</button>
+            <button className="btn-ghost" onClick={() => {
+              const missed = queue.filter((oi, k) => answers[k] !== order[oi].answer);
+              if (missed.length === 0) return;
+              setQueue(missed); setAnswers([]); setIdx(0); setPicked(null); setFinished(null); setMissedOnly(true);
+            }}>Retry missed only</button>
+          </div>
         </div>
-        <div className="mt-4 space-y-3">
+        <div className="space-y-2 p-4">
+          <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Review answers</h4>
           {queue.map((oi, k) => {
             const o = order[oi];
             const qq = quiz.questions[o.qi];
             const mine = answers[k];
+            const ok = mine === o.answer;
             return (
-              <div key={k} className="rounded-lg border border-slate-200 p-3 text-sm dark:border-slate-800">
-                <p className="font-medium">{k + 1}. {qq.question}</p>
-                <p className={mine === o.answer ? 'text-green-700' : 'text-red-600'}>Your answer: {mine !== undefined ? qq.options[o.optOrder[mine]] : '—'}</p>
-                <p className="text-green-700">Correct: {qq.options[qq.answerIndex]}</p>
-                {qq.explanation && <p className="mt-1 text-slate-500">{qq.explanation}</p>}
-              </div>
+              <details key={k} className={`rounded-xl border p-3 text-sm ${ok ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-900 dark:bg-emerald-950/20' : 'border-rose-200 bg-rose-50/50 dark:border-rose-900 dark:bg-rose-950/20'}`}>
+                <summary className="cursor-pointer font-medium">
+                  <span className={`mr-1.5 inline-grid h-5 w-5 place-items-center rounded-full text-[11px] font-bold text-white ${ok ? 'bg-emerald-500' : 'bg-rose-500'}`}>{ok ? '✓' : '✕'}</span>
+                  {k + 1}. {qq.question}
+                </summary>
+                <div className="mt-2 space-y-1 pl-7 text-[13px]">
+                  <p className={ok ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-600 dark:text-rose-300'}>Your answer: {mine !== undefined ? qq.options[o.optOrder[mine]] : '—'}</p>
+                  {!ok && <p className="text-emerald-700 dark:text-emerald-300">Correct: {qq.options[qq.answerIndex]}</p>}
+                  {qq.explanation && <p className="text-slate-500">{qq.explanation}</p>}
+                </div>
+              </details>
             );
           })}
         </div>
@@ -106,35 +130,58 @@ export function QuizRunner({ quiz, courseId, onDone }: { quiz: Quiz; courseId: s
   }
 
   if (!q || !cur) return null;
+  const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+  const answered = picked !== null;
+  const wasRight = picked === cur.answer;
   return (
-    <div className="card p-4">
-      <div className="flex items-center justify-between text-xs text-slate-500">
-        <span>Question {idx + 1} / {queue.length}</span>
-        {timeLeft !== null && <span aria-label="Time left">{Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}</span>}
+    <div className="card p-5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{quiz.title}</p>
+        {timeLeft !== null && (
+          <span className={`rounded-full px-2.5 py-1 font-mono text-xs font-bold ${timeLeft < 60 ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`} aria-label="Time left">
+            {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+          </span>
+        )}
       </div>
-      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-        <div className="h-full bg-indigo-600" style={{ width: `${((idx) / queue.length) * 100}%` }} />
-      </div>
-      <h3 className="mt-3 font-medium">{q.question}</h3>
-      <div className="mt-2 space-y-2">
-        {cur.optOrder.map((oi, displayIdx) => (
-          <button key={oi} onClick={() => setPicked(displayIdx)}
-            className={`block w-full rounded-lg border px-3 py-2 text-left text-sm ${picked === displayIdx ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950' : 'border-slate-200 dark:border-slate-800'}`}>
-            {q.options[oi]}
-          </button>
+      <div className="mt-2 flex gap-1" role="progressbar" aria-valuenow={idx + 1} aria-valuemin={1} aria-valuemax={queue.length} aria-label="Quiz progress">
+        {queue.map((_, i) => (
+          <span key={i} className={`h-1.5 flex-1 rounded-full ${i < idx ? 'bg-emerald-500' : i === idx ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-800'}`} />
         ))}
       </div>
-      {picked !== null && (
-        <p className={`mt-2 text-sm ${picked === cur.answer ? 'text-green-700' : 'text-red-600'}`}>
-          {picked === cur.answer ? 'Correct! ' : 'Not quite. '}{q.explanation ?? ''}
-        </p>
+      <p className="mt-1 text-xs text-slate-500">Question {idx + 1} of {queue.length}</p>
+      <h3 className="mt-2 text-[17px] font-bold leading-snug">{q.question}</h3>
+      <div className="mt-3 space-y-2" role="radiogroup" aria-label="Answer options">
+        {cur.optOrder.map((oi, displayIdx) => {
+          const selected = picked === displayIdx;
+          return (
+            <button key={oi} role="radio" aria-checked={selected} onClick={() => setPicked(displayIdx)}
+              className={`flex w-full items-center gap-3 rounded-xl border-2 px-3 py-2.5 text-left text-sm font-medium transition ${
+                selected
+                  ? 'border-indigo-600 bg-indigo-50 shadow-sm dark:bg-indigo-950/60'
+                  : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/60'
+              }`}>
+              <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg text-xs font-extrabold ${
+                selected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+              }`}>
+                {letters[displayIdx] ?? displayIdx + 1}
+              </span>
+              <span className="flex-1">{q.options[oi]}</span>
+            </button>
+          );
+        })}
+      </div>
+      {answered && (
+        <div className={`mt-3 flex items-start gap-2 rounded-xl p-3 text-sm ${wasRight ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200' : 'bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-200'}`} role="status">
+          <span className="text-base" aria-hidden>{wasRight ? '✓' : '✕'}</span>
+          <p><strong>{wasRight ? 'Correct! ' : 'Not quite. '}</strong>{q.explanation ?? (wasRight ? 'Well done.' : 'Review the options and try the next one.')}</p>
+        </div>
       )}
-      <div className="mt-3 flex gap-2">
-        <button className="btn-primary" disabled={picked === null} onClick={() => {
+      <div className="mt-4">
+        <button className="btn-primary w-full !py-2.5" disabled={picked === null} onClick={() => {
           const next = [...answers, picked as number];
           if (idx + 1 >= queue.length) finish(next);
           else { setAnswers(next); setIdx(idx + 1); setPicked(null); }
-        }}>{idx + 1 >= queue.length ? 'Finish' : 'Next'}</button>
+        }}>{idx + 1 >= queue.length ? 'Finish quiz' : 'Next question →'}</button>
       </div>
     </div>
   );

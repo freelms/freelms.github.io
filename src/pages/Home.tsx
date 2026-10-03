@@ -130,32 +130,42 @@ export default function Home({ lessonsByCourse, setLessons }: HomeProps) {
 
   return (
     <div className="mx-auto max-w-6xl px-3 py-4">
-      <section className="card overflow-hidden" aria-label="About FreeLMS">
-        <div className="bg-gradient-to-r from-indigo-600 to-violet-600 p-6 text-white sm:p-8">
-          <h1 className="max-w-2xl text-2xl font-bold leading-tight sm:text-3xl">
-            Free Online Courses for Everyone. Learn Anything, at Your Pace.
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-indigo-100">
-            FreeLMS is a free online courses platform with curated video training, lesson-by-lesson
-            progress tracking, quizzes with instant feedback and personal notes. No fees. No ads. Just learning — from web development and freelancing to
-            everyday digital skills.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <a href="#/paths" className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-indigo-700">Browse learning paths</a>
-            <a href="#/about" className="rounded-lg border border-white/40 px-4 py-2 text-sm font-medium text-white">How it works</a>
-          </div>
-          <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-indigo-100">
-            <li>✓ 100% free, forever</li>
-            <li>✓ Learn from top creators (always credited)</li>
-            <li>✓ Quizzes, notes &amp; progress tracking included</li>
-          </ul>
+      <section className="relative overflow-hidden rounded-2xl bg-slate-950 text-white" aria-label="About FreeLMS">
+        <div className="pointer-events-none absolute inset-0" aria-hidden>
+          <div className="absolute -top-24 -left-16 h-72 w-72 rounded-full bg-indigo-600/40 blur-3xl" />
+          <div className="absolute -bottom-28 right-0 h-80 w-80 rounded-full bg-violet-600/30 blur-3xl" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.08),transparent_60%)]" />
         </div>
-</section>
+        <div className="relative p-6 sm:p-10">
+          <p className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-100">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Free forever · No ads
+          </p>
+          <h1 className="mt-3 max-w-2xl text-3xl font-extrabold leading-[1.08] tracking-tight sm:text-[2.75rem]">
+            Free online courses for everyone. <span className="bg-gradient-to-r from-indigo-300 to-violet-300 bg-clip-text text-transparent">Learn anything, at your pace.</span>
+          </h1>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-300">
+            Curated video training with lesson-by-lesson progress tracking, quizzes with instant
+            feedback and personal notes — from web development and freelancing to everyday digital skills.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-2.5">
+            <a href="#/paths" className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-950/30 transition hover:-translate-y-0.5 hover:shadow-xl">Browse learning paths</a>
+            <a href="#/about" className="rounded-xl border border-white/25 bg-white/5 px-5 py-2.5 text-sm font-medium text-white backdrop-blur transition hover:bg-white/10">How it works</a>
+          </div>
+          <dl className="mt-6 flex flex-wrap gap-x-8 gap-y-2 border-t border-white/10 pt-4 text-sm">
+            <div><dt className="sr-only">Price</dt><dd className="font-bold">{courses.length}+ courses</dd><dd className="text-xs text-slate-400">100% free</dd></div>
+            <div><dd className="font-bold">Top creators</dd><dd className="text-xs text-slate-400">Always credited</dd></div>
+            <div><dd className="font-bold">Quizzes + notes</dd><dd className="text-xs text-slate-400">Progress saved</dd></div>
+          </dl>
+        </div>
+      </section>
       {user && enrolledCourses.length > 0 && (
-        <section aria-label="Continue learning" className="mt-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold">Continue learning</h2>
-            <Link to="/my-courses" className="text-sm text-indigo-600 hover:underline flex items-center gap-1">
+        <section aria-label="Continue learning" className="mt-8">
+          <div className="flex items-end justify-between mb-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-400">Pick up where you left off</p>
+              <h2 className="text-lg font-bold tracking-tight">Continue learning</h2>
+            </div>
+            <Link to="/my-courses" className="text-sm font-medium text-indigo-600 hover:underline flex items-center gap-1">
               View all <ArrowRight size={14} />
             </Link>
           </div>
@@ -168,8 +178,11 @@ export default function Home({ lessonsByCourse, setLessons }: HomeProps) {
           </div>
         </section>
       )}
-      <div className="mt-6 flex flex-wrap items-center gap-2">
-        <h2 className="w-full text-sm font-semibold">Course catalog</h2>
+      <div className="card mt-8 flex flex-wrap items-center gap-2 p-3">
+        <div className="w-full">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-400">Catalog</p>
+          <h2 className="text-lg font-bold tracking-tight">Explore free courses</h2>
+        </div>
         <input className="input max-w-xs" placeholder="Search courses…" value={q} aria-label="Search courses"
           onChange={(e) => setParams((p) => { const n = new URLSearchParams(p); e.target.value ? n.set('q', e.target.value) : n.delete('q'); return n; })} />
         <TagMultiSelect
