@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import type { Course, Enrollment, Lesson } from '../types';
 import { CourseCard } from '../components/CourseCard';
 import { ProgressRing, EmptyState } from '../components/ui';
+import { resolveThumb } from '../lib/thumb';
 import { BookOpen, CheckCircle2, Clock, ArrowRight, Filter, X } from 'lucide-react';
 
 type FilterTab = 'all' | 'in-progress' | 'completed' | 'not-started';
@@ -205,9 +206,9 @@ export default function MyCourses({ lessonsByCourse }: { lessonsByCourse: Record
             <Link key={e.courseId || e.id} to={`/learn/${e.courseId || e.id}`} className="card overflow-hidden hover:shadow-lg transition-shadow group">
               <div className="relative">
                 {course.thumbnail ? (
-                  <img src={course.thumbnail} alt="" className="h-40 w-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                  <img src={resolveThumb(course.thumbnail)} alt="" className="h-[208px] w-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
                 ) : (
-                  <div className="h-40 w-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white">
+                  <div className="h-[208px] w-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white">
                     <span className="text-xl font-bold">{course.title.charAt(0)}</span>
                   </div>
                 )}

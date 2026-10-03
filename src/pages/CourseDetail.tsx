@@ -95,7 +95,7 @@ export default function CourseDetail() {
   return (
     <div className="mx-auto max-w-4xl px-3 py-4">
       <div className="card overflow-hidden">
-        {course.thumbnail && <img src={resolveThumb(course.thumbnail)} alt="" className="h-52 w-full object-cover" />}
+        {course.thumbnail && <img src={resolveThumb(course.thumbnail)} alt="" className="h-[270px] w-full object-cover" />}
         <div className="p-4">
           <div className="flex flex-wrap items-center gap-1.5">
             {(course.tags ?? []).map((t) => (

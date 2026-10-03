@@ -213,9 +213,9 @@ export default function TagPage() {
           {visible.map((c) => (
             <Link key={c.id} to={`/course/${c.id}`} className="card overflow-hidden hover:shadow-md">
               {c.thumbnail ? (
-                <img src={resolveThumb(c.thumbnail)} alt="" className="h-32 w-full object-cover" loading="lazy" />
+                <img src={resolveThumb(c.thumbnail)} alt="" className="h-[166px] w-full object-cover" loading="lazy" />
               ) : (
-                <div className="grid h-32 w-full place-items-center bg-indigo-50 text-indigo-600 dark:bg-slate-800">
+                <div className="grid h-[166px] w-full place-items-center bg-indigo-50 text-indigo-600 dark:bg-slate-800">
                   FreeLMS
                 </div>
               )}
