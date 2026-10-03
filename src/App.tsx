@@ -3,7 +3,7 @@ import { HashRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import { ThemeProvider } from './hooks/useTheme';
 import { ToastProvider } from './hooks/useToast';
-import { Navbar, MobileNav, Footer } from './components/Shell';
+import { Navbar, Footer } from './components/Shell';
 import { ProtectedRoute, AdminRoute } from './components/Routes';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SearchPalette } from './components/SearchPalette';
@@ -69,7 +69,6 @@ export default function App() {
                 </Routes>
               </main>
               <Footer />
-              <MobileNav />
               <SearchPalette open={palette} close={() => setPalette(false)} courses={courses} lessonsByCourse={lessons} />
               {/* keep palette index fresh from Home via event */}
               <PaletteSync setCourses={setCourses} />

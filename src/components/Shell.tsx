@@ -1,5 +1,5 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { GraduationCap, Moon, Sun, Home, BookOpen, ShieldCheck, User as UserIcon, LogOut, Flame, Search, BarChart2 } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { GraduationCap, Moon, Sun, Home, BookOpen, ShieldCheck, User as UserIcon, LogOut, Flame, Search, BarChart2, Menu, X } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
@@ -13,6 +13,7 @@ export function Navbar({ onSearch }: { onSearch: () => void }) {
   const { user, isAdmin } = useAuth();
   const { theme, toggle } = useTheme();
   const [open, setOpen] = useState(false);
+  const [drawer, setDrawer] = useState(false);
   const [streak, setStreak] = useState(0);
   const nav = useNavigate();
   useEffect(() => {
@@ -26,6 +27,9 @@ export function Navbar({ onSearch }: { onSearch: () => void }) {
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/90 backdrop-blur dark:bg-slate-950/90 dark:border-slate-800">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-3">
+        <button className="btn-ghost !px-2.5 md:hidden" onClick={() => setDrawer(true)} aria-label="Open menu">
+          <Menu size={18} />
+        </button>
         <Link to="/" className="flex items-center gap-2 font-bold" aria-label="FreeLMS home">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-600 text-white"><GraduationCap size={18} /></span>
           <span className="hidden sm:inline">FreeLMS</span>
@@ -70,30 +74,107 @@ export function Navbar({ onSearch }: { onSearch: () => void }) {
           )}
         </div>
       </div>
+      <MobileDrawer open={drawer} close={() => setDrawer(false)} />
     </header>
   );
 }
 
-export function MobileNav() {
-  const { isAdmin, user } = useAuth();
+export function MobileDrawer({ open, close }: { open: boolean; close: () => void }) {
+  const { user, isAdmin } = useAuth();
+  const { theme, toggle } = useTheme();
+  const loc = useLocation();
+  const nav = useNavigate();
+
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+    if (open) {
+      window.addEventListener('keydown', h);
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      window.removeEventListener('keydown', h);
+      document.body.style.overflow = '';
+    };
+  }, [open, close]);
+
+  const links = [
+    { to: '/', label: 'Catalog', icon: Home, show: true },
+    { to: '/my-courses', label: 'My Courses', icon: BookOpen, show: !!user },
+    { to: '/metrics', label: 'Metrics', icon: BarChart2, show: !!user },
+    { to: '/paths', label: 'Paths', icon: Flame, show: true },
+    { to: '/admin', label: 'Admin', icon: ShieldCheck, show: isAdmin },
+    { to: '/profile', label: 'Profile', icon: UserIcon, show: !!user }
+  ].filter((l) => l.show);
+
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur dark:bg-slate-950/95 dark:border-slate-800 md:hidden" aria-label="Mobile">
-      <div className="grid grid-cols-5 text-[11px]">
-        <Link to="/" className="flex flex-col items-center gap-0.5 py-2"><Home size={18} />Home</Link>
-        {user && <Link to="/my-courses" className="flex flex-col items-center gap-0.5 py-2"><BookOpen size={18} />My Courses</Link>}
-        {user && <Link to="/metrics" className="flex flex-col items-center gap-0.5 py-2"><BarChart2 size={18} />Metrics</Link>}
-        <Link to="/paths" className="flex flex-col items-center gap-0.5 py-2"><Flame size={18} />Paths</Link>
-        {isAdmin
-          ? <Link to="/admin" className="flex flex-col items-center gap-0.5 py-2"><ShieldCheck size={18} />Admin</Link>
-          : <Link to="/profile" className="flex flex-col items-center gap-0.5 py-2"><UserIcon size={18} />Profile</Link>}
-      </div>
-    </nav>
+    <div className={`fixed inset-0 z-50 md:hidden ${open ? '' : 'pointer-events-none'}`} aria-hidden={!open}>
+      <div
+        className={`absolute inset-0 bg-black/40 transition-opacity ${open ? 'opacity-100' : 'opacity-0'}`}
+        onClick={close}
+      />
+      <aside
+        role="dialog"
+        aria-label="Menu"
+        className={`absolute left-0 top-0 flex h-full w-[280px] max-w-[85vw] flex-col bg-white shadow-xl transition-transform duration-300 dark:bg-slate-950 ${open ? 'translate-x-0' : '-translate-x-full'}`}
+      >
+        <div className="flex items-center gap-2 border-b border-slate-200 p-4 dark:border-slate-800">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-600 text-white"><GraduationCap size={18} /></span>
+          <span className="font-bold">FreeLMS</span>
+          <button className="ml-auto rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800" onClick={close} aria-label="Close menu">
+            <X size={18} />
+          </button>
+        </div>
+        {user && (
+          <div className="flex items-center gap-2.5 border-b border-slate-200 p-4 dark:border-slate-800">
+            {user.photoURL
+              ? <img src={user.photoURL} alt="" className="h-9 w-9 rounded-full" />
+              : <span className="grid h-9 w-9 place-items-center rounded-full bg-indigo-100 dark:bg-slate-800"><UserIcon size={17} /></span>}
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold">{user.displayName ?? user.email}</p>
+              <p className="truncate text-xs text-slate-500">{user.email}</p>
+            </div>
+          </div>
+        )}
+        <nav className="flex-1 overflow-y-auto p-2" aria-label="Mobile">
+          {links.map((l) => {
+            const active = loc.pathname === l.to;
+            return (
+              <Link
+                key={l.to}
+                to={l.to}
+                onClick={close}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${active ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                aria-current={active ? 'page' : undefined}
+              >
+                <l.icon size={18} /> {l.label}
+              </Link>
+            );
+          })}
+          {!user && (
+            <Link to="/login" onClick={close} className="btn-primary mt-2 w-full">Sign in</Link>
+          )}
+        </nav>
+        <div className="flex items-center gap-2 border-t border-slate-200 p-3 dark:border-slate-800">
+          <button onClick={toggle} className="btn-ghost flex-1 !py-2 text-sm" aria-label="Toggle theme">
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />} {theme === 'dark' ? 'Light' : 'Dark'}
+          </button>
+          {user && (
+            <button
+              className="btn-ghost flex-1 !py-2 text-sm"
+              onClick={async () => { if (auth) await signOut(auth); close(); nav('/'); }}
+            >
+              <LogOut size={16} /> Logout
+            </button>
+          )}
+        </div>
+      </aside>
+    </div>
   );
 }
 
 export function Footer() {
   return (
-    <footer className="no-print mx-auto max-w-6xl px-3 pb-24 pt-8 text-center text-xs text-slate-500 md:pb-10">
+    <footer className="no-print mx-auto max-w-6xl px-3 pb-10 pt-8 text-center text-xs text-slate-500">
       <p>Free for everyone. No ads. Video credits belong to their original creators.</p>
       <FooterCategories />
       <p className="mt-1 flex flex-wrap justify-center gap-3">
