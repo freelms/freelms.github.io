@@ -18,7 +18,6 @@ service cloud.firestore {
     // them with the Firebase Admin SDK, and snapshots contain titles/durations
     // only — never video IDs.
     function isPublishedCourse() { return resource.data.status == 'published' || resource.data.published == true; }
-    function isInstructor() { return signedIn() && (me().role == 'instructor' || me().role == 'admin'); }
 
     match /admins/{uid} {
       allow read: if signedIn();

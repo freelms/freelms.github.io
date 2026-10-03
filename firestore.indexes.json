@@ -1,11 +1,6 @@
 {
   "indexes": [
     {
-      "collectionGroup": "enrollments",
-      "queryScope": "COLLECTION",
-      "fields": [{ "fieldPath": "enrolledAt", "order": "DESCENDING" }]
-    },
-    {
       "collectionGroup": "quizAttempts",
       "queryScope": "COLLECTION",
       "fields": [
@@ -27,6 +22,15 @@
       "fields": [
         { "fieldPath": "parentSlug", "order": "ASCENDING" },
         { "fieldPath": "menuOrder", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "comments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "courseId", "order": "ASCENDING" },
+        { "fieldPath": "lessonId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     }
   ],
