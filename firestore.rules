@@ -18,6 +18,7 @@ service cloud.firestore {
     // them with the Firebase Admin SDK, and snapshots contain titles/durations
     // only — never video IDs.
     function isPublishedCourse() { return resource.data.status == 'published' || resource.data.published == true; }
+    function isInstructor() { return signedIn() && (me().role == 'instructor' || me().role == 'admin'); }
 
     match /admins/{uid} {
       allow read: if signedIn();
@@ -38,6 +39,13 @@ service cloud.firestore {
         allow read: if isAdmin() || isEnrolled(courseId);
         allow write: if isAdmin();
       }
+    }
+
+    match /tags/{tagId} {
+      // Anyone can read tags (for catalog, filters, SEO)
+      allow read: if signedIn();
+      // Only admins can create, update, delete tags
+      allow create, update, delete: if isAdmin();
     }
 
     match /users/{uid} {

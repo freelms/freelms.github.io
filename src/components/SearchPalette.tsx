@@ -11,10 +11,10 @@ export function SearchPalette({ open, close, courses, lessonsByCourse }: {
   const nav = useNavigate();
   const results = useMemo(() => {
     const s = q.trim().toLowerCase();
-    if (!s) return courses.slice(0, 8).map((c) => ({ label: c.title, sub: c.topic, to: `/course/${c.id}` }));
+    if (!s) return courses.slice(0, 8).map((c) => ({ label: c.title, sub: c.topic ?? '', to: `/course/${c.id}` }));
     const out: { label: string; sub: string; to: string }[] = [];
     for (const c of courses) {
-      if ((c.title + ' ' + c.topic).toLowerCase().includes(s)) out.push({ label: c.title, sub: c.topic, to: `/course/${c.id}` });
+      if ((c.title + ' ' + (c.topic ?? '')).toLowerCase().includes(s)) out.push({ label: c.title, sub: c.topic ?? '', to: `/course/${c.id}` });
       for (const l of lessonsByCourse[c.id] ?? []) {
         if (l.title.toLowerCase().includes(s)) out.push({ label: l.title, sub: c.title, to: `/learn/${c.id}` });
         if (out.length > 20) break;

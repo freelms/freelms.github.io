@@ -1,6 +1,31 @@
 export type CourseStatus = 'draft' | 'published' | 'archived';
 export type Level = 'Beginner' | 'Intermediate' | 'Advanced';
 
+export interface Tag {
+  id: string; // slug
+  name: string;
+  slug: string;
+  description?: string;
+  color?: string; // hex color
+  icon?: string; // lucide icon name
+  parentSlug?: string; // max one level nesting
+  showInMenu?: boolean;
+  menuOrder?: number;
+  featured?: boolean;
+  courseCount?: number; // published courses only
+  seoTitle?: string;
+  seoDescription?: string;
+  slugHistory?: string[]; // previous slugs for redirects
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+export interface CourseTag {
+  slug: string;
+  name: string;
+  color?: string;
+}
+
 export interface Credit { creator: string; channelUrl?: string; videoUrl?: string; }
 export interface ScheduleEntry { day: string; time: string; topic: string; link?: string; }
 export interface ResourceLink { label: string; url: string; type?: string; }
@@ -9,7 +34,7 @@ export interface Course {
   id: string;
   title: string;
   description: string;
-  topic: string;
+  topic?: string; // legacy, deprecated - use tagSlugs
   instructor: string;
   thumbnail?: string;
   outcomes?: string[];
@@ -25,6 +50,8 @@ export interface Course {
   totalDuration?: string;
   enrollmentCount?: number;
   completionCount?: number;
+  tagSlugs?: string[]; // array of tag slugs, max 8
+  tags?: CourseTag[]; // denormalized for rendering
   seoTitle?: string;
   seoDescription?: string;
   shareImage?: string;

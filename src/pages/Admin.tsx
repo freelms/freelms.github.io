@@ -3,14 +3,15 @@ import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, s
 import { db } from '../lib/firebase';
 import { resolveThumb } from '../lib/thumb';
 import { useToast } from '../hooks/useToast';
-import type { Course, Lesson, Quiz } from '../types';
+import type { Course, Lesson, Quiz, Tag } from '../types';
 import { extractVideoId, thumbFor, checkVideoEmbeddable } from '../lib/youtube';
 import { validateQuizJson } from '../components/Quiz';
 import { SAMPLE_QUIZ_JSON, SAMPLE_COURSE_JSON, QUIZ_AI_PROMPT, COURSE_AI_PROMPT } from '../lib/samples';
 
 import { ModerationTab } from '../components/Comments';
+import { TagsTab } from '../components/TagsTab';
 
-type Tab = 'courses' | 'lessons' | 'quizzes' | 'analytics' | 'students' | 'announce' | 'reports' | 'moderation' | 'paths' | 'import';
+type Tab = 'courses' | 'lessons' | 'quizzes' | 'analytics' | 'students' | 'announce' | 'reports' | 'moderation' | 'paths' | 'import' | 'tags';
 
 const emptyCourse: Partial<Course> = {
   title: '', description: '', topic: '', instructor: '', thumbnail: '', status: 'draft',
@@ -19,7 +20,7 @@ const emptyCourse: Partial<Course> = {
 
 export default function Admin() {
   const [tab, setTab] = useState<Tab>('courses');
-  const tabs: Tab[] = ['courses', 'lessons', 'quizzes', 'analytics', 'students', 'announce', 'reports', 'moderation', 'paths', 'import'];
+  const tabs: Tab[] = ['courses', 'lessons', 'quizzes', 'analytics', 'students', 'announce', 'reports', 'moderation', 'paths', 'import', 'tags'];
   return (
     <div className="mx-auto max-w-6xl px-3 py-4">
       <h1 className="font-bold">Admin</h1>
@@ -39,6 +40,7 @@ export default function Admin() {
         {tab === 'moderation' && <ModerationTab />}
         {tab === 'paths' && <PathsTab />}
         {tab === 'import' && <ImportTab />}
+        {tab === 'tags' && <TagsTab />}
       </div>
     </div>
   );

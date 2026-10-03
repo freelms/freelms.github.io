@@ -12,6 +12,22 @@
         { "fieldPath": "courseId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "tags",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "showInMenu", "order": "ASCENDING" },
+        { "fieldPath": "menuOrder", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "tags",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "parentSlug", "order": "ASCENDING" },
+        { "fieldPath": "menuOrder", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

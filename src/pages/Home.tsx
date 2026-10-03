@@ -73,7 +73,7 @@ export default function Home({ lessonsByCourse, setLessons }: HomeProps) {
     })();
   }, [user]);
 
-  const topics = useMemo(() => [...new Set(courses.map((c) => c.topic).filter(Boolean))], [courses]);
+  const topics = useMemo(() => [...new Set(courses.map((c) => c.topic).filter((t): t is string => Boolean(t)))], [courses]);
 
   const visible = courses.filter((c) => {
     if (mine && user && !enrollments[c.id]) return false;
