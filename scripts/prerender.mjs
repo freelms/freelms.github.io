@@ -392,12 +392,12 @@ async function main() {
   };
   writeFileSync(join(dist, 'version.json'), JSON.stringify(version, null, 2));
 
-  // Static catalog links inside the SPA shell for crawlers.
+  // Static catalog links inside the SPA shell for crawlers (hidden from visual users).
   try {
     const idx = join(dist, 'index.html');
     let html = readFileSync(idx, 'utf8');
     if (!html.includes('id="seo-catalog"') && courses.length) {
-      const nav = `<nav id="seo-catalog" aria-label="All free courses"><h2>All free courses</h2><ul>` +
+      const nav = `<nav id="seo-catalog" aria-label="All free courses" style="display: none;"><h2>All free courses</h2><ul>` +
         courses.map((c) => `<li><a href="course/${c.id}/">${esc(c.seoTitle || c.title)} — free course</a></li>`).join('') +
         `</ul></nav>`;
       html = html.replace('<div id="root"></div>', `<div id="root"></div>\n    ${nav}`);
