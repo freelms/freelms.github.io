@@ -9,8 +9,9 @@ import { validateQuizJson } from '../components/Quiz';
 import { SAMPLE_QUIZ_JSON, SAMPLE_COURSE_JSON, QUIZ_AI_PROMPT, COURSE_AI_PROMPT } from '../lib/samples';
 
 import { ModerationTab } from '../components/Comments';
-import { TagsTab, recalcCounts } from '../components/TagsTab';
+import { TagsTab } from '../components/TagsTab';
 import { TagMultiSelect } from '../components/TagMultiSelect';
+import { denormalizeTags, syncTagCounters } from '../lib/tags';
 
 type Tab = 'courses' | 'lessons' | 'quizzes' | 'analytics' | 'students' | 'announce' | 'reports' | 'moderation' | 'paths' | 'import' | 'tags';
 
@@ -65,6 +66,7 @@ function CoursesTab() {
   const [editing, setEditing] = useState<string | null>(null);
   const [editLessons, setEditLessons] = useState<Lesson[]>([]);
   const [tagsList, setTagsList] = useState<Tag[]>([]);
+  const [origTags, setOrigTags] = useState<{ status?: unknown; tagSlugs?: unknown } | null>(null);
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
   useEffect(() => {
@@ -90,21 +92,28 @@ function CoursesTab() {
     if (oc < 3) out.push(`Only ${oc} learning outcome(s) (<3).`);
     const bad = editLessons.filter((l) => !String(l.title ?? '').trim() || /^(untitled(\s+lesson)?|full\s+lesson)$/i.test(String(l.title).trim()));
     if (bad.length) out.push(`${bad.length} lesson(s) untitled or "Full Lesson" — rename in the Lessons tab.`);
+    if (!(form.tagSlugs ?? []).length) out.push('No tags — add up to 8 so the course appears in categories and search.');
     return out;
   })();
 
   const save = async () => {
     if (!db || !form.title) { push('Title required'); return; }
+    const slugs = (form.tagSlugs ?? []).slice(0, 8);
     const payload = {
       ...form,
+      tagSlugs: slugs,
+      tags: denormalizeTags(slugs, tagsList),
       outcomes: Array.isArray(form.outcomes) ? form.outcomes : String(form.outcomes ?? '').split('\n').filter(Boolean),
       updatedAt: serverTimestamp()
     };
-    if (editing) await updateDoc(doc(db, 'courses', editing), payload as any);
-    else await addDoc(collection(db, 'courses'), { ...payload, createdAt: serverTimestamp(), lessonCount: 0 });
-    setForm({ ...emptyCourse }); setEditing(null); reload();
-    await recalcCounts(db, tagsList, push);
-    push('Saved');
+    if (editing) {
+      await updateDoc(doc(db, 'courses', editing), payload as any);
+      await syncTagCounters(db, origTags, { status: payload.status, tagSlugs: slugs });
+    } else {
+      await addDoc(collection(db, 'courses'), { ...payload, createdAt: serverTimestamp(), lessonCount: 0 });
+      await syncTagCounters(db, null, { status: payload.status, tagSlugs: slugs });
+    }
+    setForm({ ...emptyCourse }); setEditing(null); setOrigTags(null); reload(); push('Saved');
   };
 
   return (
@@ -156,7 +165,7 @@ function CoursesTab() {
           <textarea className="input" placeholder="Schedule JSON: [{day, time, topic, link}]" value={JSON.stringify(form.schedule ?? [])} onChange={(e) => { try { set('schedule', JSON.parse(e.target.value)); } catch { /* ignore */ } }} />
           <div className="flex gap-2">
             <button className="btn-primary" onClick={save}>Save</button>
-            {editing && <button className="btn-ghost" onClick={() => { setEditing(null); setForm({ ...emptyCourse }); }}>Cancel</button>}
+            {editing && <button className="btn-ghost" onClick={() => { setEditing(null); setOrigTags(null); setForm({ ...emptyCourse }); }}>Cancel</button>}
           </div>
         </div>
       </div>
@@ -164,7 +173,7 @@ function CoursesTab() {
         {courses.map((c) => (
           <div key={c.id} className="card flex items-center gap-2 p-3 text-sm">
             <div className="flex-1"><p className="font-medium">{c.title}</p><p className="text-xs text-slate-500">{c.status} · {c.topic} · {c.id}</p></div>
-            <button className="btn-ghost !py-1 text-xs" onClick={() => { setEditing(c.id); setForm({ ...c }); }}>Edit</button>
+            <button className="btn-ghost !py-1 text-xs" onClick={() => { setEditing(c.id); setOrigTags({ status: c.status, tagSlugs: c.tagSlugs ?? [] }); setForm({ ...c }); }}>Edit</button>
             <a className="btn-ghost !py-1 text-xs" href={`#/course/${c.id}`} target="_blank" rel="noreferrer">Preview as student</a>
             <button className="btn-ghost !py-1 text-xs" onClick={async () => {
               if (!db || !confirm(`Duplicate ${c.title} with lessons + quizzes?`)) return;
@@ -180,6 +189,7 @@ function CoursesTab() {
             }}>Duplicate</button>
             <button className="btn-ghost !py-1 text-xs !text-red-600" onClick={async () => {
               if (!db || !confirm('Delete course?')) return;
+              await syncTagCounters(db, { status: c.status, tagSlugs: c.tagSlugs ?? [] }, null);
               await deleteDoc(doc(db, 'courses', c.id)); reload();
             }}>Delete</button>
           </div>

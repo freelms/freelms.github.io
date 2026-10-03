@@ -7,6 +7,7 @@ import { auth, db } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { streakCount } from './streak';
+import { TagNavigation, FooterCategories } from './TagNavigation';
 
 export function Navbar({ onSearch }: { onSearch: () => void }) {
   const { user, isAdmin } = useAuth();
@@ -31,12 +32,14 @@ export function Navbar({ onSearch }: { onSearch: () => void }) {
         </Link>
         <nav className="ml-2 hidden items-center gap-1 text-sm md:flex">
           <Link to="/" className="rounded-lg px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">Catalog</Link>
+          <span className="hidden md:inline"><TagNavigation /></span>
           {user && <Link to="/my-courses" className="rounded-lg px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">My Courses</Link>}
           {user && <Link to="/metrics" className="rounded-lg px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">Metrics</Link>}
           {isAdmin && <Link to="/admin" className="rounded-lg px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">Admin</Link>}
           <Link to="/paths" className="rounded-lg px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">Paths</Link>
         </nav>
         <div className="ml-auto flex items-center gap-1.5">
+          <span className="md:hidden"><TagNavigation mobile /></span>
           {user && streak > 0 && (
             <span className="chip" title="Daily learning streak" aria-label={`${streak} day streak`}><Flame size={13} className="text-orange-500" />{streak}</span>
           )}
@@ -92,6 +95,7 @@ export function Footer() {
   return (
     <footer className="no-print mx-auto max-w-6xl px-3 pb-24 pt-8 text-center text-xs text-slate-500 md:pb-10">
       <p>Free for everyone. No ads. Video credits belong to their original creators.</p>
+      <FooterCategories />
       <p className="mt-1 flex flex-wrap justify-center gap-3">
         <Link to="/about" className="underline">About</Link>
         <Link to="/privacy" className="underline">Privacy</Link>

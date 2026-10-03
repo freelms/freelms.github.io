@@ -22,6 +22,7 @@ import Profile from './pages/Profile';
 import Paths from './pages/Paths';
 import Metrics from './pages/Metrics';
 import MyCourses from './pages/MyCourses';
+import TagPage from './pages/TagPage';
 import { StaticPage } from './pages/Static';
 
 initSentry();
@@ -60,6 +61,7 @@ export default function App() {
                   <Route path="/profile" element={<ErrorBoundary><ProtectedRoute><Profile /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/metrics" element={<ErrorBoundary><ProtectedRoute><Metrics /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/my-courses" element={<ErrorBoundary><ProtectedRoute><MyCourses lessonsByCourse={lessons} /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/tag/:slug" element={<ErrorBoundary><TagPage /></ErrorBoundary>} />
                   <Route path="/paths" element={<ErrorBoundary><Paths /></ErrorBoundary>} />
                   <Route path="/privacy" element={<StaticPage kind="privacy" />} />
                   <Route path="/terms" element={<StaticPage kind="terms" />} />

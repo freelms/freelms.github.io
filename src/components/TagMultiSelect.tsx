@@ -5,9 +5,10 @@ interface TagMultiSelectProps {
   value: string[];
   onChange: (tags: string[]) => void;
   allTags: Tag[];
+  disabled?: boolean;
 }
 
-export function TagMultiSelect({ value, onChange, allTags }: TagMultiSelectProps) {
+export function TagMultiSelect({ value, onChange, allTags, disabled }: TagMultiSelectProps) {
   const [search, setSearch] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -19,7 +20,7 @@ export function TagMultiSelect({ value, onChange, allTags }: TagMultiSelectProps
     .slice(0, 10);
 
   const handleAddTag = (slug: string) => {
-    if (value.includes(slug)) return;
+    if (disabled || value.includes(slug)) return;
     if (value.length >= 8) { alert('Maximum 8 tags allowed'); return; }
     onChange([...value, slug]);
     setSearch('');
@@ -60,11 +61,12 @@ export function TagMultiSelect({ value, onChange, allTags }: TagMultiSelectProps
           ref={inputRef}
           type="text"
           value={search}
+          disabled={disabled || (value.length >= 8 && !showDropdown)}
           onChange={(e) => setSearch(e.target.value)}
           onFocus={() => setShowDropdown(true)}
           onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
           className="input flex-1 min-w-40"
-          disabled={value.length >= 8 && !showDropdown}
+          placeholder={value.length >= 8 ? 'Maximum 8 tags reached' : 'Search or create tag…'}
           aria-label="Search or add tags"
         />
       </div>

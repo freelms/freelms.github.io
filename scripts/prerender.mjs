@@ -10,10 +10,12 @@
 //      Only published course docs are readable; lessons will be skipped.
 //
 // Emits:
-//   dist/course/{id}/index.html  — static snapshot (H1, syllabus, JSON-LD)
-//   dist/sitemap.xml             — home + every published course (real URLs only)
+//   dist/course/{id}/index.html  — static snapshot (H1, syllabus, tag chips, JSON-LD)
+//   dist/tag/{slug}/index.html   — tag page (H1, description, course list, CollectionPage+ItemList LD)
+//                                 only for tags with >=1 published course and 120+ char description
+//   dist/sitemap.xml             — home + every published course + every tag page (real URLs only)
 //   dist/robots.txt              — references the sitemap
-//   dist/index.html              — static catalog link list injected for crawlers
+//   dist/index.html              — static catalog + category link lists injected for crawlers
 //
 // Fails the build when Firestore errors, or when zero courses are found
 // (override the latter with ALLOW_ZERO_COURSES=true for the very first deploy).
@@ -71,6 +73,7 @@ function stripTimestamps(s) {
   t = t.split('\n').filter((l) => !/^\s*\d{1,2}:\d{2}(\s*[-–—:.]|\s|$)/.test(l)).join('\n');
   t = t.replace(/\d{1,2}:\d{2}\s*[-–—]\s*[^.\n]*?(?=\d{1,2}:\d{2}|[.\n]|$)/g, '');
   t = t.replace(/(^|[\s(])\d{1,2}:\d{2}(?=[\s).,]|$)/g, '$1');
+  t = t.replace(/\.\s*\./g, '.').replace(/\s+([.,!?;:])/g, '$1');
   return t.replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
 }
 // Obvious engagement-bait sentences ("subscribe", "comment below") read as spam to crawlers.
@@ -203,7 +206,13 @@ async function fetchServiceAccount(saJson) {
     c._updated = c.updatedAt ?? c.createdAt ?? new Date().toISOString();
     courses.push(c);
   }
-  return { courses, via: 'service-account' };
+  let tags = [];
+  try {
+    tags = await restDocs(projectId, 'tags', auth);
+  } catch {
+    console.warn('[prerender] tags not readable (expected on public REST) — tag pages skipped.');
+  }
+  return { courses, tags, via: 'service-account' };
 }
 
 async function fetchRest(projectId, key) {
@@ -222,18 +231,26 @@ async function fetchRest(projectId, key) {
     }
     c._updated = c.updatedAt ?? c.createdAt ?? new Date().toISOString();
   }
-  return { courses, via: 'rest' };
+  let tags = [];
+  try {
+    tags = await restDocs(projectId, 'tags', auth);
+  } catch {
+    console.warn('[prerender] tags not publicly readable — tag pages skipped.');
+  }
+  return { courses, tags, via: 'rest' };
 }
 
 // ---- Snapshot template ----
-function coursePage(c, all, site) {
+function coursePage(c, all, site, catNav) {
   const title = shortTitle(c);
   const meta = metaDescription(c);
   const url = `${site}course/${c.id}/`;
   const appLink = `${site}#/course/${c.id}`;
   const img = absImg(c.shareImage || c.thumbnail, site);
   const lessons = c._lessons ?? [];
-  const related = all.filter((x) => x.id !== c.id && (x.topic ?? '') === (c.topic ?? '')).slice(0, 3);
+  const myTags = c.tagSlugs ?? [];
+  let related = all.filter((x) => x.id !== c.id && (x.tagSlugs ?? []).some((s) => myTags.includes(s))).slice(0, 3);
+  if (!related.length && c.topic) related = all.filter((x) => x.id !== c.id && (x.topic ?? '') === c.topic).slice(0, 3);
   const outcomes = (c.outcomes ?? []).map((o) => `<li>${esc(o)}</li>`).join('');
   const syllabus = lessons
     .map((l) => `<li>${esc(l.title)}${l.duration ? ` <span>(${esc(l.duration)})</span>` : ''}</li>`)
@@ -249,6 +266,7 @@ function coursePage(c, all, site) {
     description: meta,
     url,
     ...(img ? { image: img } : {}),
+    ...(myTags.length ? { keywords: myTags.join(', ') } : {}),
     provider: { '@type': 'Organization', name: 'FreeLMS', sameAs: site },
     ...(lessons.length
       ? {
@@ -299,7 +317,8 @@ ${img ? `<meta name="twitter:image" content="${esc(img)}" />` : ''}
 <nav aria-label="Breadcrumb"><a href="${site}">FreeLMS</a> › <a href="${site}">Free courses</a> › ${esc(c.title)}</nav>
 <h1>${esc(title)} — free online course</h1>
 ${img ? `<img class="hero" src="${esc(img)}" alt="${esc(c.title)}" />` : ''}
-<p><strong>Topic:</strong> ${esc(c.topic ?? '')} · <strong>Instructor:</strong> ${esc(c.instructor ?? '')}${c.level ? ` · <strong>Level:</strong> ${esc(c.level)}` : ''} · <strong>Lessons:</strong> ${lessons.length}</p>
+<p><strong>Instructor:</strong> ${esc(c.instructor ?? '')}${c.level ? ` · <strong>Level:</strong> ${esc(c.level)}` : ''} · <strong>Lessons:</strong> ${lessons.length}</p>
+${(c.tags ?? []).length ? `<p>Categories: ${(c.tags ?? []).map((t) => `<a href="${site}tag/${esc(t.slug)}/">${esc(t.name)}</a>`).join(' · ')}</p>` : (c.topic ? `<p><strong>Topic:</strong> ${esc(c.topic)}</p>` : '')}
 ${bodyParas(c)}
 <p><a class="cta" href="${esc(appLink)}">Start this free course</a></p>
 ${outcomes ? `<h2>What you'll learn</h2><ul>${outcomes}</ul>` : ''}
@@ -307,6 +326,86 @@ ${outcomes ? `<h2>What you'll learn</h2><ul>${outcomes}</ul>` : ''}
 <ol>${syllabus || '<li>Lessons coming soon.</li>'}</ol>
 ${credits ? `<h2>Credits and sources</h2><ul>${credits}</ul><p>Videos are embedded from their original creators — please support them directly.</p>` : ''}
 ${related.length ? `<h2>Related courses</h2><ul>${related.map((r) => `<li><a href="${site}course/${r.id}/">${esc(r.title)} — free course</a></li>`).join('')}</ul>` : ''}
+${catNav}
+<p><a href="${site}">Browse all free courses</a></p>
+</body>
+</html>`;
+}
+
+/** Plain-HTML category navigation block, embedded in every prerendered page. */
+function categoryNav(site, tags) {
+  if (!tags.length) return '';
+  return `<nav aria-label="Categories"><h2>Categories</h2><ul>` +
+    tags.map((t) => `<li><a href="${site}tag/${esc(t.slug)}/">${esc(t.name)}</a></li>`).join('') +
+    `</ul></nav>`;
+}
+
+// ---- Tag snapshot template ----
+function tagPage(t, tCourses, related, site, catNav) {
+  const title = String(t.seoTitle ?? '').trim() || `${t.name} Courses`;
+  const desc = String(t.seoDescription ?? '').trim() || String(t.description ?? '').trim();
+  const url = `${site}tag/${t.slug}/`;
+  const img = tCourses.map((c) => absImg(c.shareImage || c.thumbnail, site)).find(Boolean) ?? '';
+  const ldCollection = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: title,
+    description: desc.slice(0, 300),
+    url,
+    isPartOf: { '@type': 'WebSite', name: 'FreeLMS', url: site }
+  };
+  const ldItems = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    numberOfItems: tCourses.length,
+    itemListElement: tCourses.map((c, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: c.title,
+      url: `${site}course/${c.id}/`
+    }))
+  };
+  const ldCrumb = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: site },
+      { '@type': 'ListItem', position: 2, name: 'Categories', item: site },
+      { '@type': 'ListItem', position: 3, name: t.name, item: url }
+    ]
+  };
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${esc(title)} | FreeLMS</title>
+<meta name="description" content="${esc(desc.slice(0, 160))}" />
+<link rel="canonical" href="${esc(url)}" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="FreeLMS" />
+<meta property="og:title" content="${esc(title)} | FreeLMS" />
+<meta property="og:description" content="${esc(desc.slice(0, 200))}" />
+<meta property="og:url" content="${esc(url)}" />
+${img ? `<meta property="og:image" content="${esc(img)}" />` : ''}
+<meta name="twitter:card" content="${img ? 'summary_large_image' : 'summary'}" />
+<meta name="twitter:title" content="${esc(title)} | FreeLMS" />
+<meta name="twitter:description" content="${esc(desc.slice(0, 200))}" />
+${img ? `<meta name="twitter:image" content="${esc(img)}" />` : ''}
+<script type="application/ld+json">${JSON.stringify(ldCollection)}</script>
+<script type="application/ld+json">${JSON.stringify(ldItems)}</script>
+<script type="application/ld+json">${JSON.stringify(ldCrumb)}</script>
+<style>body{font-family:system-ui,sans-serif;max-width:720px;margin:0 auto;padding:24px;color:#1e293b}h1{font-size:28px}a{color:#4f46e5}.cta{display:inline-block;background:#4f46e5;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600}</style>
+</head>
+<body>
+<nav aria-label="Breadcrumb"><a href="${site}">FreeLMS</a> › <a href="${site}">Categories</a> › ${esc(t.name)}</nav>
+<h1>${esc(t.name)} — free online courses</h1>
+<p>${esc(desc)}</p>
+<p><strong>${tCourses.length} free course(s)</strong> · <a class="cta" href="${site}#/tag/${esc(t.slug)}">Browse in the app</a></p>
+<h2>Courses in ${esc(t.name)}</h2>
+<ol>${tCourses.map((c) => `<li><a href="${site}course/${c.id}/">${esc(c.title)}</a>${c.level ? ` (${esc(c.level)})` : ''} — ${c._lessons?.length ?? 0} lessons</li>`).join('')}</ol>
+${related.length ? `<h2>Related categories</h2><ul>${related.map((r) => `<li><a href="${site}tag/${esc(r.slug)}/">${esc(r.name)}</a></li>`).join('')}</ul>` : ''}
+${catNav}
 <p><a href="${site}">Browse all free courses</a></p>
 </body>
 </html>`;
@@ -322,6 +421,7 @@ async function main() {
   const site = (env.SITE_URL || env.VITE_APP_URL || 'https://freelms.github.io/').replace(/\/?$/, '/');
 
   let courses = [];
+  let tags = [];
   let via = '';
   try {
     const saRaw = env.FIREBASE_SERVICE_ACCOUNT || '';
@@ -329,10 +429,10 @@ async function main() {
     console.log(`[prerender] service-account secret: ${saRaw ? `present (${saRaw.length} chars, starts=${saRaw.trim().startsWith('{')})` : 'missing'}`);
     if (saRaw) {
       via = 'service-account';
-      ({ courses } = await fetchServiceAccount(saRaw));
+      ({ courses, tags } = await fetchServiceAccount(saRaw));
     } else if (env.VITE_FIREBASE_PROJECT_ID && env.VITE_FIREBASE_API_KEY) {
       console.warn('[prerender] No FIREBASE_SERVICE_ACCOUNT — REST fallback (lessons stay private, syllabus may be empty).');
-      ({ courses, via } = await fetchRest(env.VITE_FIREBASE_PROJECT_ID, env.VITE_FIREBASE_API_KEY));
+      ({ courses, tags, via } = await fetchRest(env.VITE_FIREBASE_PROJECT_ID, env.VITE_FIREBASE_API_KEY));
     } else {
       fail('No FIREBASE_SERVICE_ACCOUNT secret and no Firebase web config found. Set the secret (CI) or VITE_FIREBASE_* (local).');
     }
@@ -340,7 +440,7 @@ async function main() {
     fail(`Firestore read failed via ${via || 'unknown source'}: ${e?.message ?? e}`);
   }
 
-  console.log(`[prerender] ${courses.length} published course(s) via ${via}`);
+  console.log(`[prerender] ${courses.length} published course(s), ${tags.length} tag(s) via ${via}`);
 
   if (courses.length === 0) {
     if (env.ALLOW_ZERO_COURSES !== 'true') {
@@ -365,15 +465,72 @@ async function main() {
   for (const c of courses) {
     const dir = join(courseDir, c.id);
     mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, 'index.html'), coursePage(c, courses, site));
+    writeFileSync(join(dir, 'index.html'), coursePage(c, courses, site, ''));
     const w = qualityWarnings(c);
     console.log(`[prerender] course/${c.id}/ — ${w.length ? 'WARNINGS: ' + w.join('; ') : 'OK'}`);
   }
 
-  // Sitemap: real URLs only (no hash fragments), lastmod per course.
+  // ---- Tag pages: only tags with >=1 published course AND 120+ char description.
+  // Others get no page (noindex by absence) and a build warning.
+  const publishedByTag = {};
+  for (const c of courses) {
+    for (const s of c.tagSlugs ?? []) {
+      (publishedByTag[s] = publishedByTag[s] || []).push(c);
+    }
+  }
+  const pageTags = [];
+  for (const t of tags) {
+    const n = (publishedByTag[t.slug] ?? []).length;
+    const dlen = String(t.seoDescription || t.description || '').trim().length;
+    if (n < 1) {
+      console.log(`[prerender] tag/${t.slug}/ — skipped (no published courses)`);
+      continue;
+    }
+    if (dlen < 120) {
+      console.log(`[prerender] tag/${t.slug}/ — skipped (description ${dlen} chars, need 120+)`);
+      continue;
+    }
+    pageTags.push(t);
+  }
+  const catNav = categoryNav(site, pageTags);
+  // Re-render course snapshots WITH the category nav (needs final tag list).
+  for (const c of courses) {
+    writeFileSync(join(courseDir, c.id, 'index.html'), coursePage(c, courses, site, catNav));
+  }
+  const tagDir = join(dist, 'tag');
+  const tagSlugs = new Set(pageTags.map((t) => t.slug));
+  if (existsSync(tagDir)) {
+    for (const entry of readdirSync(tagDir, { withFileTypes: true })) {
+      if (entry.isDirectory() && !tagSlugs.has(entry.name)) {
+        rmSync(join(tagDir, entry.name), { recursive: true, force: true });
+        console.log(`[prerender] removed stale snapshot: tag/${entry.name}/`);
+      }
+    }
+  }
+  for (const t of pageTags) {
+    const tCourses = (publishedByTag[t.slug] ?? []).sort((a, b) => a.title.localeCompare(b.title));
+    const co = {};
+    for (const c of tCourses) {
+      for (const s of c.tagSlugs ?? []) {
+        if (s !== t.slug) co[s] = (co[s] ?? 0) + 1;
+      }
+    }
+    const related = Object.entries(co)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([s]) => tags.find((x) => x.slug === s))
+      .filter((x) => x && tagSlugs.has(x.slug));
+    const dir = join(tagDir, t.slug);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, 'index.html'), tagPage(t, tCourses, related, site, catNav));
+    console.log(`[prerender] tag/${t.slug}/ — OK (${tCourses.length} courses)`);
+  }
+
+  // Sitemap: real URLs only (no hash fragments), lastmod per course/tag.
   const urls = [
     { loc: site, lastmod: new Date().toISOString().slice(0, 10) },
-    ...courses.map((c) => ({ loc: `${site}course/${c.id}/`, lastmod: day(c._updated) }))
+    ...courses.map((c) => ({ loc: `${site}course/${c.id}/`, lastmod: day(c._updated) })),
+    ...pageTags.map((t) => ({ loc: `${site}tag/${t.slug}/`, lastmod: day(t.updatedAt) }))
   ];
   writeFileSync(
     join(dist, 'sitemap.xml'),
@@ -392,7 +549,7 @@ async function main() {
   };
   writeFileSync(join(dist, 'version.json'), JSON.stringify(version, null, 2));
 
-  // Static catalog links inside the SPA shell for crawlers (hidden from visual users).
+  // Static catalog + category links inside the SPA shell for crawlers (hidden from visual users).
   try {
     const idx = join(dist, 'index.html');
     let html = readFileSync(idx, 'utf8');
@@ -403,11 +560,18 @@ async function main() {
       html = html.replace('<div id="root"></div>', `<div id="root"></div>\n    ${nav}`);
       writeFileSync(idx, html);
     }
+    if (!html.includes('id="seo-categories"') && pageTags.length) {
+      const cats = `<nav id="seo-categories" aria-label="Categories" style="display: none;"><h2>Categories</h2><ul>` +
+        pageTags.map((t) => `<li><a href="tag/${t.slug}/">${esc(t.name)}</a></li>`).join('') +
+        `</ul></nav>`;
+      html = html.replace('<div id="root"></div>', `<div id="root"></div>\n    ${cats}`);
+      writeFileSync(idx, html);
+    }
   } catch (e) {
     console.warn('[prerender] catalog inject skipped:', String(e).slice(0, 120));
   }
 
-  console.log(`[prerender] done: ${courses.length} snapshot(s), sitemap (${urls.length} URLs), robots.txt`);
+  console.log(`[prerender] done: ${courses.length} snapshot(s), ${pageTags.length} tag page(s), sitemap (${urls.length} URLs), robots.txt`);
 }
 
 main();

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { doc, getDoc, getDocs, collection, setDoc, serverTimestamp, addDoc, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
@@ -173,6 +173,15 @@ export default function Learn() {
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-sm font-bold">{course.title}</h1>
           <p className="text-xs text-slate-500">{done.length}/{lessons.length} lessons · {pct}%</p>
+          {(course.tags ?? []).length > 0 && (
+            <p className="mt-1 flex flex-wrap gap-1">
+              {(course.tags ?? []).map((t) => (
+                <Link key={t.slug} to={`/tag/${t.slug}`} className="chip !py-0.5 !text-[11px] hover:bg-slate-200 dark:hover:bg-slate-700" style={t.color ? { backgroundColor: `${t.color}20`, color: t.color } : undefined}>
+                  {t.name}
+                </Link>
+              ))}
+            </p>
+          )}
         </div>
       </div>
 

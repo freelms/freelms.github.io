@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { collection, doc, getDocs, getDoc, setDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { collection, doc, getDocs, getDoc, setDoc, deleteDoc, orderBy, query, where } from 'firebase/firestore';
 import { Link, useSearchParams } from 'react-router-dom';
 import { db, hasFirebaseConfig } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
-import type { Course, Enrollment, Lesson } from '../types';
+import type { Course, Enrollment, Lesson, Tag } from '../types';
 import { CourseCard } from '../components/CourseCard';
 import { SkeletonCard, EmptyState } from '../components/ui';
 import { ArrowRight } from 'lucide-react';
+import { TagMultiSelect } from '../components/TagMultiSelect';
 
 const TTL = 60_000;
 
@@ -24,10 +25,12 @@ export default function Home({ lessonsByCourse, setLessons }: HomeProps) {
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [shown, setShown] = useState(12);
   const q = params.get('q') ?? '';
-  const topic = params.get('topic') ?? '';
   const mine = params.get('mine') === '1';
   const savedOnly = params.get('saved') === '1';
-  useEffect(() => { setShown(12); }, [q, topic, mine, savedOnly]);
+  const tagParams = params.getAll('tag');
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [tagsLoading, setTagsLoading] = useState(true);
+  useEffect(() => { setShown(12); }, [q, mine, savedOnly, tagParams]);
   useEffect(() => { document.title = 'FreeLMS — Free Online Courses & Video Training Platform'; }, []);
 
   useEffect(() => {
@@ -73,13 +76,44 @@ export default function Home({ lessonsByCourse, setLessons }: HomeProps) {
     })();
   }, [user]);
 
-  const topics = useMemo(() => [...new Set(courses.map((c) => c.topic).filter((t): t is string => Boolean(t)))], [courses]);
+  // Load tags for filter
+  useEffect(() => {
+    if (!db) return;
+    (async () => {
+      try {
+        const q = query(
+          collection(db, 'tags'),
+          where('showInMenu', '==', true),
+          orderBy('menuOrder', 'asc'),
+          orderBy('name', 'asc')
+        );
+        const snap = await getDocs(q);
+        setTags(snap.docs.map(d => ({ id: d.id, ...d.data() })) as Tag[]);
+        setTagsLoading(false);
+      } catch (e) {
+        console.error('Failed to load tags for filter:', e);
+        setTagsLoading(false);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!db || !user) { setEnrollments({}); setBookmarks([]); return; }
+    (async () => {
+      const es = await getDocs(collection(db, 'users', user.uid, 'enrollments'));
+      const m: Record<string, Enrollment> = {};
+      es.docs.forEach((d) => { m[d.id] = { courseId: d.id, ...(d.data() as any) }; });
+      setEnrollments(m);
+      const bs = await getDocs(collection(db, 'users', user.uid, 'bookmarks'));
+      setBookmarks(bs.docs.map((d) => d.id));
+    })();
+  }, [user]);
 
   const visible = courses.filter((c) => {
     if (mine && user && !enrollments[c.id]) return false;
     if (savedOnly && !bookmarks.includes(c.id)) return false;
-    if (topic && c.topic !== topic) return false;
-    if (q && !(c.title + ' ' + c.instructor + ' ' + c.topic).toLowerCase().includes(q.toLowerCase())) return false;
+    if (tagParams.length > 0 && !tagParams.every(t => c.tagSlugs?.includes(t))) return false;
+    if (q && !(c.title + ' ' + c.instructor + ' ' + (c.topic ?? '') + ' ' + (c.tagSlugs || []).join(' ')).toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   });
 
@@ -140,13 +174,17 @@ export default function Home({ lessonsByCourse, setLessons }: HomeProps) {
         <h2 className="w-full text-sm font-semibold">Course catalog</h2>
         <input className="input max-w-xs" placeholder="Search courses…" value={q} aria-label="Search courses"
           onChange={(e) => setParams((p) => { const n = new URLSearchParams(p); e.target.value ? n.set('q', e.target.value) : n.delete('q'); return n; })} />
-        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Topics">
-          <button className={`chip ${!topic ? 'bg-indigo-600 text-white' : ''}`} onClick={() => setParams((p) => { const n = new URLSearchParams(p); n.delete('topic'); return n; })}>All</button>
-          {topics.map((t) => (
-            <button key={t} className={`chip ${topic === t ? 'bg-indigo-600 text-white' : ''}`}
-              onClick={() => setParams((p) => { const n = new URLSearchParams(p); n.set('topic', t); return n; })}>{t}</button>
-          ))}
-        </div>
+        <TagMultiSelect
+          value={tagParams}
+          onChange={(tags) => {
+            const p = new URLSearchParams(params);
+            p.delete('tag');
+            tags.forEach(t => p.append('tag', t));
+            setParams(p);
+          }}
+          allTags={tags}
+          disabled={tagsLoading}
+        />
         {user && <button className={`chip ${savedOnly ? 'bg-indigo-600 text-white' : ''}`}
           onClick={() => setParams((p) => { const n = new URLSearchParams(p); savedOnly ? n.delete('saved') : n.set('saved', '1'); return n; })}>♥ Saved</button>}
       </div>

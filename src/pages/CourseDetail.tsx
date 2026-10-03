@@ -97,8 +97,15 @@ export default function CourseDetail() {
       <div className="card overflow-hidden">
         {course.thumbnail && <img src={resolveThumb(course.thumbnail)} alt="" className="h-52 w-full object-cover" />}
         <div className="p-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="chip bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">{course.topic}</span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {(course.tags ?? []).map((t) => (
+              <Link key={t.slug} to={`/tag/${t.slug}`} className="chip hover:bg-slate-200 dark:hover:bg-slate-700" style={t.color ? { backgroundColor: `${t.color}20`, color: t.color } : undefined}>
+                {t.name}
+              </Link>
+            ))}
+            {!(course.tags ?? []).length && course.topic && (
+              <span className="chip bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">{course.topic}</span>
+            )}
             {course.level && <span className="chip">{course.level}</span>}
           </div>
           <h1 className="mt-2 text-xl font-bold">{course.title}</h1>

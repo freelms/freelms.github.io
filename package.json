@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test:rules": "firebase emulators:exec --only firestore \"vitest run tests/rules.test.ts\"",
     "backup": "node scripts/backup.mjs",
-    "deploy": "node scripts/deploy.mjs"
+    "deploy": "node scripts/deploy.mjs",
+    "migrate:tags": "node scripts/migrate-tags.mjs"
   },
   "dependencies": {
     "@sentry/react": "^8.28.0",
