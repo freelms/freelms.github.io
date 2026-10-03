@@ -10,6 +10,7 @@ import { SAMPLE_QUIZ_JSON, SAMPLE_COURSE_JSON, QUIZ_AI_PROMPT, COURSE_AI_PROMPT 
 
 import { ModerationTab } from '../components/Comments';
 import { TagsTab } from '../components/TagsTab';
+import { TagMultiSelect } from '../components/TagMultiSelect';
 
 type Tab = 'courses' | 'lessons' | 'quizzes' | 'analytics' | 'students' | 'announce' | 'reports' | 'moderation' | 'paths' | 'import' | 'tags';
 
@@ -63,7 +64,15 @@ function CoursesTab() {
   const [form, setForm] = useState<Partial<Course>>({ ...emptyCourse });
   const [editing, setEditing] = useState<string | null>(null);
   const [editLessons, setEditLessons] = useState<Lesson[]>([]);
+  const [tagsList, setTagsList] = useState<Tag[]>([]);
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
+
+  useEffect(() => {
+    if (!db) return;
+    getDocs(collection(db, 'tags'))
+      .then((s) => setTagsList(s.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Tag[]))
+      .catch(() => setTagsList([]));
+  }, []);
 
   // Lesson titles for the course being edited (SEO quality check).
   useEffect(() => {
@@ -104,8 +113,15 @@ function CoursesTab() {
           <input className="input" placeholder="Title" value={form.title ?? ''} onChange={(e) => set('title', e.target.value)} />
           <textarea className="input" placeholder="Description" value={form.description ?? ''} onChange={(e) => set('description', e.target.value)} />
           <div className="grid grid-cols-2 gap-2">
-            <input className="input" placeholder="Topic" value={form.topic ?? ''} onChange={(e) => set('topic', e.target.value)} />
             <input className="input" placeholder="Instructor" value={form.instructor ?? ''} onChange={(e) => set('instructor', e.target.value)} />
+            <div className="relative">
+              <label className="block text-xs text-slate-500 mb-1">Tags (max 8)</label>
+              <TagMultiSelect
+                value={form.tagSlugs ?? []}
+                onChange={(tags) => set('tagSlugs', tags)}
+                allTags={tagsList}
+              />
+            </div>
           </div>
           <input className="input" placeholder="Thumbnail URL, e.g. thumbs/name.jpg or https://…" value={form.thumbnail ?? ''} onChange={(e) => set('thumbnail', e.target.value)} />
           {form.thumbnail && <img src={resolveThumb(form.thumbnail)} alt="thumbnail preview" className="h-28 w-full rounded-lg object-cover" />}
