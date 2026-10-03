@@ -1,6 +1,6 @@
 import { describe, it, beforeEach } from 'vitest';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import fs from 'node:fs';
 
 let env: any;
@@ -55,5 +55,39 @@ describe('rules', () => {
     const alice = env.authenticatedContext('alice');
     await assertFails(setDoc(doc(alice.firestore(), 'paths', 'p1'), { title: 'x' }));
     await assertFails(setDoc(doc(alice.firestore(), 'announcements', 'a1'), { message: 'hi' }));
+  });
+
+  // Tag rules tests
+  it('allows anyone to read tags', async () => {
+    const admin = env.authenticatedContext('admin1', { email: 'shariqq.com@gmail.com' });
+    await assertSucceeds(setDoc(doc(admin.firestore(), 'tags/t1'), { name: 'Test', slug: 't1', color: '#4f46e5' }));
+    const anon = env.unauthenticatedContext();
+    await assertSucceeds(getDoc(doc(anon.firestore(), 'tags/t1')));
+  });
+  it('blocks non-admins from creating tags', async () => {
+    const alice = env.authenticatedContext('alice');
+    await assertFails(setDoc(doc(alice.firestore(), 'tags/t2'), { name: 'Test2', slug: 't2', color: '#4f46e5' }));
+  });
+  it('allows admins to create tags', async () => {
+    const admin = env.authenticatedContext('admin1', { email: 'shariqq.com@gmail.com' });
+    await assertSucceeds(setDoc(doc(admin.firestore(), 'tags/t3'), { name: 'Test3', slug: 't3', color: '#4f46e5' }));
+  });
+  it('blocks non-admins from updating tags', async () => {
+    const admin = env.authenticatedContext('admin1', { email: 'shariqq.com@gmail.com' });
+    await assertSucceeds(setDoc(doc(admin.firestore(), 'tags/t4'), { name: 'Test4', slug: 't4', color: '#4f46e5' }));
+    const alice = env.authenticatedContext('alice');
+    await assertFails(updateDoc(doc(alice.firestore(), 'tags/t4'), { name: 'Test4 Updated' }));
+  });
+  it('blocks non-admins from deleting tags', async () => {
+    const admin = env.authenticatedContext('admin1', { email: 'shariqq.com@gmail.com' });
+    await assertSucceeds(setDoc(doc(admin.firestore(), 'tags/t5'), { name: 'Test5', slug: 't5', color: '#4f46e5' }));
+    const alice = env.authenticatedContext('alice');
+    await assertFails(deleteDoc(doc(alice.firestore(), 'tags/t5')));
+  });
+  it('allows admins to update and delete tags', async () => {
+    const admin = env.authenticatedContext('admin1', { email: 'shariqq.com@gmail.com' });
+    await assertSucceeds(setDoc(doc(admin.firestore(), 'tags/t6'), { name: 'Test6', slug: 't6', color: '#4f46e5' }));
+    await assertSucceeds(updateDoc(doc(admin.firestore(), 'tags/t6'), { name: 'Test6 Updated' }));
+    await assertSucceeds(deleteDoc(doc(admin.firestore(), 'tags/t6')));
   });
 });
