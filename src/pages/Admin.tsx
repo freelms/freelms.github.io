@@ -71,10 +71,15 @@ function CoursesTab() {
 
   useEffect(() => {
     if (!db) return;
+    reloadTags();
+  }, []);
+
+  const reloadTags = () => {
+    if (!db) return;
     getDocs(collection(db, 'tags'))
       .then((s) => setTagsList(s.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Tag[]))
       .catch(() => setTagsList([]));
-  }, []);
+  };
 
   // Lesson titles for the course being edited (SEO quality check).
   useEffect(() => {
@@ -131,6 +136,8 @@ function CoursesTab() {
                 value={form.tagSlugs ?? []}
                 onChange={(tags) => set('tagSlugs', tags)}
                 allTags={tagsList}
+                allowCreate
+                onTagsChanged={reloadTags}
               />
             </div>
           </div>

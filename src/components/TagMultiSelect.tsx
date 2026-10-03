@@ -6,9 +6,11 @@ interface TagMultiSelectProps {
   onChange: (tags: string[]) => void;
   allTags: Tag[];
   disabled?: boolean;
+  allowCreate?: boolean;
+  onTagsChanged?: () => void;
 }
 
-export function TagMultiSelect({ value, onChange, allTags, disabled }: TagMultiSelectProps) {
+export function TagMultiSelect({ value, onChange, allTags, disabled, allowCreate, onTagsChanged }: TagMultiSelectProps) {
   const [search, setSearch] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -18,6 +20,8 @@ export function TagMultiSelect({ value, onChange, allTags, disabled }: TagMultiS
     .filter(t => t.name.toLowerCase().includes(search.toLowerCase()))
     .filter(t => !value.includes(t.slug))
     .slice(0, 10);
+
+  const [creating, setCreating] = useState(false);
 
   const handleAddTag = (slug: string) => {
     if (disabled || value.includes(slug)) return;
@@ -80,10 +84,38 @@ export function TagMultiSelect({ value, onChange, allTags, disabled }: TagMultiS
                 className="w-full px-3 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
                 onClick={() => handleAddTag(tag.slug)}
               >
-                <span className="w-4 h-4 rounded" style={{ backgroundColor: tag?.color || '#4f46e5' }} />
+                <span className="w-4 h-4 rounded" style={{ backgroundColor: tag.color || '#4f46e5' }} />
                 <span>{tag.name}</span>
               </button>
             ))
+          ) : search.trim() && allowCreate ? (
+            <button
+              type="button"
+              className="w-full px-3 py-2 text-left text-sm text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800"
+              disabled={creating}
+              onClick={async () => {
+                const { doc, serverTimestamp, setDoc } = await import('firebase/firestore');
+                const { db } = await import('../lib/firebase');
+                const { slugify } = await import('../lib/slug');
+                const slug = slugify(search.trim());
+                if (!slug || !db) return;
+                if (allTags.some((t) => t.slug.toLowerCase() === slug)) { handleAddTag(slug); return; }
+                setCreating(true);
+                try {
+                  await setDoc(doc(db, 'tags', slug), {
+                    name: search.trim(), slug, color: '#4f46e5', showInMenu: true,
+                    menuOrder: allTags.length, courseCount: 0,
+                    createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+                  });
+                  onTagsChanged?.();
+                  handleAddTag(slug);
+                } finally {
+                  setCreating(false);
+                }
+              }}
+            >
+              + Create "{search.trim()}"{creating ? '…' : ''}
+            </button>
           ) : (
             <div className="px-3 py-2 text-sm text-slate-500">
               {search ? 'No matching tags' : 'Start typing to search tags'}

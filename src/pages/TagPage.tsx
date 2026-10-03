@@ -19,6 +19,7 @@ export default function TagPage() {
   const [loading, setLoading] = useState(true);
   const [level, setLevel] = useState(searchParams.get('level') ?? '');
   const [sort, setSort] = useState<SortKey>((searchParams.get('sort') as SortKey) || 'title');
+  const [children, setChildren] = useState<Tag[]>([]);
 
   useEffect(() => {
     if (!db || !slug) return;
@@ -54,6 +55,19 @@ export default function TagPage() {
         if (!cancelled) setCourses([]);
       } finally {
         if (!cancelled) setLoading(false);
+      }
+    })();
+    (async () => {
+      try {
+        const snap = await getDocs(query(collection(db, 'tags'), where('parentSlug', '==', slug)));
+        if (!cancelled) {
+          setChildren(
+            snap.docs
+              .map((d) => ({ id: d.id, ...(d.data() as any) })) as Tag[]
+          );
+        }
+      } catch {
+        if (!cancelled) setChildren([]);
       }
     })();
     return () => { cancelled = true; };
@@ -161,6 +175,17 @@ export default function TagPage() {
           <option value="newest">Sort: Newest</option>
         </select>
       </div>
+
+      {children.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-slate-500">Subcategories:</span>
+          {children.map((c) => (
+            <Link key={c.id} to={`/tag/${c.slug}`} className="chip hover:bg-slate-200 dark:hover:bg-slate-700">
+              {c.name}
+            </Link>
+          ))}
+        </div>
+      )}
 
       {related.length > 0 && (
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
