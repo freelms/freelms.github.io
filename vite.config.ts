@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'FreeLMS — Free Training Platform',
@@ -25,15 +25,17 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/\/__/],
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/www\.youtube.*|^https:\/\/www\.youtube-nocookie.*|^https:\/\/i\.ytimg\.com\/.*/i,
             handler: 'CacheFirst',
             options: { cacheName: 'youtube-embeds', expiration: { maxEntries: 50 } }
           }
-        ],
-        // Never cache Firestore / Auth traffic
-        navigateFallbackDenylist: [/\/__/]
+        ]
       }
     })
   ],

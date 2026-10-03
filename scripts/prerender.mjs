@@ -384,6 +384,14 @@ async function main() {
 
   writeFileSync(join(dist, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${site}sitemap.xml\n`);
 
+  // Write version file for cache-busting detection
+  const version = {
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    coursesCount: courses.length
+  };
+  writeFileSync(join(dist, 'version.json'), JSON.stringify(version, null, 2));
+
   // Static catalog links inside the SPA shell for crawlers.
   try {
     const idx = join(dist, 'index.html');

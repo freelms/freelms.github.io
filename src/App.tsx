@@ -10,6 +10,8 @@ import { SearchPalette } from './components/SearchPalette';
 import { AnnouncementBanner } from './components/Banner';
 import { initSentry } from './lib/sentry';
 import { initAppCheck } from './lib/appcheck';
+import { useSWUpdate } from './hooks/useSWUpdate';
+import { useVersionCheck } from './hooks/useVersionCheck';
 import type { Course, Lesson } from './types';
 import Login from './pages/Login';
 import Home from './pages/Home';
@@ -26,6 +28,8 @@ export default function App() {
   const [palette, setPalette] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [lessons, setLessons] = useState<Record<string, Lesson[]>>({});
+  useSWUpdate();
+  useVersionCheck();
 
   useEffect(() => { initAppCheck(); }, []);
   useEffect(() => {
@@ -63,7 +67,6 @@ export default function App() {
               <SearchPalette open={palette} close={() => setPalette(false)} courses={courses} lessonsByCourse={lessons} />
               {/* keep palette index fresh from Home via event */}
               <PaletteSync setCourses={setCourses} />
-              <PwaUpdater />
             </ErrorBoundary>
           </HashRouter>
         </ToastProvider>
