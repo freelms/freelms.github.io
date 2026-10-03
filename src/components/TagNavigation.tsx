@@ -1,12 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, X, Tag as TagIcon } from 'lucide-react';
-import { collection, getDocs, orderBy, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { fetchMenuTags } from '../lib/tags';
 import type { Tag } from '../types';
-
-const CACHE_KEY = 'lh-tag-menu';
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 function useMenuTags() {
   const [tags, setTags] = useState<Tag[]>([]);
@@ -14,41 +11,18 @@ function useMenuTags() {
 
   useEffect(() => {
     let cancelled = false;
-    const fetchFresh = async () => {
-      if (!db) return;
+    (async () => {
       try {
-        const q = query(
-          collection(db, 'tags'),
-          where('showInMenu', '==', true),
-          orderBy('menuOrder', 'asc'),
-          orderBy('name', 'asc')
-        );
-        const snap = await getDocs(q);
-        const data = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Tag[];
-        if (cancelled) return;
-        setTags(data);
-        try {
-          localStorage.setItem(CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }));
-        } catch { /* ignore */ }
-        setLoading(false);
+        const data = await fetchMenuTags(db);
+        if (!cancelled) {
+          setTags(data);
+          setLoading(false);
+        }
       } catch (e) {
         console.error('Failed to load tag menu:', e);
         if (!cancelled) setLoading(false);
       }
-    };
-    try {
-      const cached = localStorage.getItem(CACHE_KEY);
-      if (cached) {
-        const { data, timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp < CACHE_TTL) {
-          setTags(data);
-          setLoading(false);
-          fetchFresh(); // background refresh
-          return () => { cancelled = true; };
-        }
-      }
-    } catch { /* ignore */ }
-    fetchFresh();
+    })();
     return () => { cancelled = true; };
   }, []);
 

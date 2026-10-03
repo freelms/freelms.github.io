@@ -98,3 +98,50 @@ export function denormalizeTags(slugs: string[], cache: Tag[]) {
     return { slug: s, name: t?.name ?? s, color: t?.color };
   });
 }
+
+const MENU_CACHE_KEY = 'lh-tag-menu';
+const MENU_TTL = 5 * 60 * 1000;
+
+/**
+ * Menu tags, resilient by design:
+ * - single-field query only (no composite index needed, works while indexes build)
+ * - client-side sort by (menuOrder, name)
+ * - memory + localStorage cache with background refresh
+ * - falls back to ALL tags with courses when nothing is flagged showInMenu
+ */
+const menuMem = { at: 0, data: [] as Tag[] };
+
+export async function fetchMenuTags(db: any, opts?: { force?: boolean }): Promise<Tag[]> {
+  if (!db) return [];
+  if (!opts?.force && menuMem.data.length && Date.now() - menuMem.at < MENU_TTL) return menuMem.data;
+  try {
+    const raw = localStorage.getItem(MENU_CACHE_KEY);
+    if (!opts?.force && raw) {
+      const { data, timestamp } = JSON.parse(raw);
+      if (Date.now() - timestamp < MENU_TTL && Array.isArray(data) && data.length) {
+        menuMem.at = timestamp;
+        menuMem.data = data;
+        // background refresh, fire-and-forget
+        fetchMenuTags(db, { force: true }).catch(() => {});
+        return data;
+      }
+    }
+  } catch { /* ignore */ }
+  const snap = await getDocs(query(collection(db, 'tags'), where('showInMenu', '==', true)));
+  let list = (snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Tag[]).sort(
+    (a, b) => (a.menuOrder ?? 9999) - (b.menuOrder ?? 9999) || a.name.localeCompare(b.name)
+  );
+  if (!list.length) {
+    // graceful fallback: show any tags that actually have courses
+    const all = await getDocs(collection(db, 'tags'));
+    list = ((all.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Tag[]))
+      .filter((t) => (t.courseCount ?? 0) > 0)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+  menuMem.at = Date.now();
+  menuMem.data = list;
+  try {
+    localStorage.setItem(MENU_CACHE_KEY, JSON.stringify({ data: list, timestamp: Date.now() }));
+  } catch { /* ignore */ }
+  return list;
+}

@@ -8,6 +8,7 @@ import { CourseCard } from '../components/CourseCard';
 import { SkeletonCard, EmptyState } from '../components/ui';
 import { ArrowRight } from 'lucide-react';
 import { TagMultiSelect } from '../components/TagMultiSelect';
+import { fetchMenuTags } from '../lib/tags';
 
 const TTL = 60_000;
 
@@ -78,23 +79,20 @@ export default function Home({ lessonsByCourse, setLessons }: HomeProps) {
 
   // Load tags for filter
   useEffect(() => {
-    if (!db) return;
+    let cancelled = false;
     (async () => {
       try {
-        const q = query(
-          collection(db, 'tags'),
-          where('showInMenu', '==', true),
-          orderBy('menuOrder', 'asc'),
-          orderBy('name', 'asc')
-        );
-        const snap = await getDocs(q);
-        setTags(snap.docs.map(d => ({ id: d.id, ...d.data() })) as Tag[]);
-        setTagsLoading(false);
+        const list = await fetchMenuTags(db);
+        if (!cancelled) {
+          setTags(list);
+          setTagsLoading(false);
+        }
       } catch (e) {
         console.error('Failed to load tags for filter:', e);
-        setTagsLoading(false);
+        if (!cancelled) setTagsLoading(false);
       }
     })();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
