@@ -6,13 +6,16 @@ import { useAuth } from '../hooks/useAuth';
 import type { Course, Enrollment, Lesson } from '../types';
 import { CourseCard } from '../components/CourseCard';
 import { SkeletonCard, EmptyState } from '../components/ui';
+import { ArrowRight } from 'lucide-react';
 
 const TTL = 60_000;
 
-export default function Home({ lessonsByCourse, setLessons }: {
+interface HomeProps {
   lessonsByCourse: Record<string, Lesson[]>;
   setLessons: (m: Record<string, Lesson[]>) => void;
-}) {
+}
+
+export default function Home({ lessonsByCourse, setLessons }: HomeProps) {
   const { user } = useAuth();
   const [params, setParams] = useSearchParams();
   const [courses, setCourses] = useState<Course[]>([]);
@@ -115,10 +118,15 @@ export default function Home({ lessonsByCourse, setLessons }: {
             <li>✓ Quizzes, notes &amp; progress tracking included</li>
           </ul>
         </div>
-      </section>
+</section>
       {user && enrolledCourses.length > 0 && (
         <section aria-label="Continue learning" className="mt-4">
-          <h2 className="text-sm font-semibold">Continue learning</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold">Continue learning</h2>
+            <Link to="/my-courses" className="text-sm text-indigo-600 hover:underline flex items-center gap-1">
+              View all <ArrowRight size={14} />
+            </Link>
+          </div>
           <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {enrolledCourses.slice(0, 3).map((c) => {
               const total = (lessonsByCourse[c.id]?.length || c.lessonCount || 1);
@@ -128,7 +136,6 @@ export default function Home({ lessonsByCourse, setLessons }: {
           </div>
         </section>
       )}
-
       <div className="mt-6 flex flex-wrap items-center gap-2">
         <h2 className="w-full text-sm font-semibold">Course catalog</h2>
         <input className="input max-w-xs" placeholder="Search courses…" value={q} aria-label="Search courses"

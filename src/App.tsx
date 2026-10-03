@@ -21,6 +21,7 @@ import Admin from './pages/Admin';
 import Profile from './pages/Profile';
 import Paths from './pages/Paths';
 import Metrics from './pages/Metrics';
+import MyCourses from './pages/MyCourses';
 import { StaticPage } from './pages/Static';
 
 initSentry();
@@ -52,12 +53,13 @@ export default function App() {
               <main className="min-h-[70vh]">
                 <Routes>
                   <Route path="/login" element={<ErrorBoundary><Login /></ErrorBoundary>} />
-                  <Route path="/" element={<ErrorBoundary><Home lessonsByCourse={lessons} setLessons={setLessons} /></ErrorBoundary>} />
+                  <Route path="/" element={<ErrorBoundary><Home lessonsByCourse={lessons as Record<string, Lesson[]>} setLessons={setLessons} /></ErrorBoundary>} />
                   <Route path="/course/:id" element={<ErrorBoundary><CourseDetail /></ErrorBoundary>} />
                   <Route path="/learn/:id" element={<ErrorBoundary><ProtectedRoute><Learn /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/admin" element={<ErrorBoundary><AdminRoute><Admin /></AdminRoute></ErrorBoundary>} />
                   <Route path="/profile" element={<ErrorBoundary><ProtectedRoute><Profile /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/metrics" element={<ErrorBoundary><ProtectedRoute><Metrics /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/my-courses" element={<ErrorBoundary><ProtectedRoute><MyCourses lessonsByCourse={lessons} /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/paths" element={<ErrorBoundary><Paths /></ErrorBoundary>} />
                   <Route path="/privacy" element={<StaticPage kind="privacy" />} />
                   <Route path="/terms" element={<StaticPage kind="terms" />} />

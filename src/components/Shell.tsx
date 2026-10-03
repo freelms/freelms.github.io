@@ -31,7 +31,7 @@ export function Navbar({ onSearch }: { onSearch: () => void }) {
         </Link>
         <nav className="ml-2 hidden items-center gap-1 text-sm md:flex">
           <Link to="/" className="rounded-lg px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">Catalog</Link>
-          {user && <Link to="/?mine=1" className="rounded-lg px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">My Courses</Link>}
+          {user && <Link to="/my-courses" className="rounded-lg px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">My Courses</Link>}
           {user && <Link to="/metrics" className="rounded-lg px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">Metrics</Link>}
           {isAdmin && <Link to="/admin" className="rounded-lg px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">Admin</Link>}
           <Link to="/paths" className="rounded-lg px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">Paths</Link>
@@ -77,7 +77,7 @@ export function MobileNav() {
     <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur dark:bg-slate-950/95 dark:border-slate-800 md:hidden" aria-label="Mobile">
       <div className="grid grid-cols-5 text-[11px]">
         <Link to="/" className="flex flex-col items-center gap-0.5 py-2"><Home size={18} />Home</Link>
-        <Link to={user ? '/?mine=1' : '/login'} className="flex flex-col items-center gap-0.5 py-2"><BookOpen size={18} />My Courses</Link>
+        {user && <Link to="/my-courses" className="flex flex-col items-center gap-0.5 py-2"><BookOpen size={18} />My Courses</Link>}
         {user && <Link to="/metrics" className="flex flex-col items-center gap-0.5 py-2"><BarChart2 size={18} />Metrics</Link>}
         <Link to="/paths" className="flex flex-col items-center gap-0.5 py-2"><Flame size={18} />Paths</Link>
         {isAdmin
