@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
 import type { Course, Enrollment, Lesson } from '../types';
@@ -34,7 +34,9 @@ export default function MyCourses({ lessonsByCourse }: { lessonsByCourse: Record
       try {
         const [eSnap, cSnap] = await Promise.all([
           getDocs(collection(db, 'users', user.uid, 'enrollments')),
-          getDocs(collection(db, 'courses'))
+          // Constrain server-side: unconstrained lists are rejected when
+          // rules branch on document data (same trap as the catalog had).
+          getDocs(query(collection(db, 'courses'), where('status', '==', 'published')))
         ]);
         const enrollmentsData = eSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         const coursesData = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));

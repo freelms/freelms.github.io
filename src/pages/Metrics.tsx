@@ -221,7 +221,7 @@ export default function Metrics() {
         const [eSnap, aSnap, cSnap, uSnap] = await Promise.all([
           getDocs(collection(db, 'users', user.uid, 'enrollments')),
           getDocs(query(collection(db, 'users', user.uid, 'quizAttempts'), orderBy('createdAt', 'desc'))),
-          getDocs(collection(db, 'courses')),
+          getDocs(query(collection(db, 'courses'), where('status', '==', 'published'))),
           getDoc(doc(db, 'users', user.uid))
         ]);
         setEnrollments(eSnap.docs.map(d => ({ id: d.id, ...d.data() })));
