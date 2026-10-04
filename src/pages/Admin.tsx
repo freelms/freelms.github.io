@@ -231,12 +231,33 @@ function LessonsTab() {
   const addOne = async (yt: string, t: string) => {
     const videoId = extractVideoId(yt);
     if (!videoId || !db || !cid) { push(`Bad URL: ${yt}`); return; }
+    // Fetch the real video title (and creator) via YouTube oEmbed — no API key needed.
+    // Bulk adds pass the URL as `t`, so only fetch when no custom title was typed.
+    let title = t && t !== yt ? t : '';
+    let creatorName = creator;
+    let oembedOk = true;
+    if (!title) {
+      try {
+        const r = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&format=json`);
+        if (r.ok) {
+          const j = await r.json();
+          title = j.title || videoId;
+          if (!creatorName && j.author_name) creatorName = j.author_name;
+        } else {
+          oembedOk = false;
+        }
+      } catch {
+        oembedOk = false;
+      }
+      if (!title) title = videoId;
+    }
     let res: any[] = [];
     try { res = JSON.parse(resources || '[]'); } catch { res = []; }
     await addDoc(collection(db, 'courses', cid, 'lessons'), {
-      title: t || videoId, videoId, order: lessons.length,
+      title, videoId, order: lessons.length,
       videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
-      creator: creator || '', channelUrl: channelUrl || '', resources: res,
+      creator: creatorName || '', channelUrl: channelUrl || '', resources: res,
+      broken: !oembedOk,
       createdAt: serverTimestamp()
     });
     // denormalized counter (E16)
@@ -258,10 +279,12 @@ function LessonsTab() {
         </div>
         <textarea className="input font-mono text-xs" placeholder='Resources JSON: [{"label":"Slides","url":"https://…","type":"PDF"}]' value={resources} onChange={(e) => setResources(e.target.value)} />
         <button className="btn-primary" disabled={!cid || !vid} onClick={async () => { await addOne(url, title); setTitle(''); setUrl(''); reload(); }}>Add lesson</button>
-        <textarea className="input min-h-[90px]" placeholder="Bulk: one YouTube URL per line" value={bulk} onChange={(e) => setBulk(e.target.value)} />
+        <textarea className="input min-h-[90px]" placeholder="Bulk: one YouTube URL per line (titles auto-fetched)" value={bulk} onChange={(e) => setBulk(e.target.value)} />
         <button className="btn-ghost" disabled={!cid || !bulk.trim()} onClick={async () => {
-          for (const line of bulk.split('\n').map((s) => s.trim()).filter(Boolean)) await addOne(line, line);
-          setBulk(''); reload(); push('Bulk added');
+          const lines = bulk.split('\n').map((s) => s.trim()).filter(Boolean);
+          push(`Adding ${lines.length} videos, fetching titles…`);
+          for (const line of lines) await addOne(line, line);
+          setBulk(''); reload(); push('Bulk added with video titles');
         }}>Add all URLs</button>
         <button className="btn-ghost" disabled={!cid} onClick={async () => {
           if (!db) return;
