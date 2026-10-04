@@ -217,6 +217,8 @@ function LessonsTab() {
   const [creator, setCreator] = useState('');
   const [channelUrl, setChannelUrl] = useState('');
   const [resources, setResources] = useState('[]');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ title: '', duration: '', creator: '', channelUrl: '', resources: '[]' });
   const vid = extractVideoId(url);
 
   const reload = async () => {
@@ -272,26 +274,66 @@ function LessonsTab() {
       </div>
       <div className="space-y-2">
         {lessons.map((l, i) => (
-          <div key={l.id} className="card flex items-center gap-2 p-2 text-sm">
-            <img src={thumbFor(l.videoId)} alt="" className="h-10 w-16 rounded object-cover" />
-            <span className="flex-1 truncate">{l.title} {l.broken && <span className="chip bg-red-100 text-red-700">broken</span>} {(l as any).lastChecked && <span className="text-[10px] text-slate-400">checked {(l as any).lastChecked?.toDate?.()?.toLocaleDateString?.() ?? ''}</span>}</span>
-            <button aria-label="Move up" disabled={i === 0} onClick={async () => {
-              if (!db) return;
-              await updateDoc(doc(db, 'courses', cid, 'lessons', l.id), { order: (l.order ?? i) - 1 });
-              await updateDoc(doc(db, 'courses', cid, 'lessons', lessons[i - 1].id), { order: i }); reload();
-            }}>↑</button>
-            <button aria-label="Move down" disabled={i === lessons.length - 1} onClick={async () => {
-              if (!db) return;
-              await updateDoc(doc(db, 'courses', cid, 'lessons', l.id), { order: (l.order ?? i) + 1 });
-              await updateDoc(doc(db, 'courses', cid, 'lessons', lessons[i + 1].id), { order: i }); reload();
-            }}>↓</button>
-            <button className="text-red-600" onClick={async () => {
-              if (db && confirm('Delete?')) {
-                await deleteDoc(doc(db, 'courses', cid, 'lessons', l.id));
-                try { await updateDoc(doc(db, 'courses', cid), { lessonCount: Math.max(0, lessons.length - 1) }); } catch { /* ignore */ }
-                reload();
-              }
-            }}>Delete</button>
+          <div key={l.id} className="card p-2 text-sm">
+            <div className="flex items-center gap-2">
+              <img src={thumbFor(l.videoId)} alt="" className="h-10 w-16 rounded object-cover" />
+              <span className="flex-1 truncate">{l.title} {l.broken && <span className="chip bg-red-100 text-red-700">broken</span>} {(l as any).lastChecked && <span className="text-[10px] text-slate-400">checked {(l as any).lastChecked?.toDate?.()?.toLocaleDateString?.() ?? ''}</span>}</span>
+              <button className="btn-ghost !px-2 !py-1 text-xs" onClick={() => {
+                setEditingId(l.id);
+                setEditForm({
+                  title: l.title ?? '', duration: l.duration ?? '',
+                  creator: l.creator ?? '', channelUrl: l.channelUrl ?? '',
+                  resources: JSON.stringify(l.resources ?? [])
+                });
+              }}>Edit</button>
+              <button aria-label="Move up" disabled={i === 0} onClick={async () => {
+                if (!db) return;
+                await updateDoc(doc(db, 'courses', cid, 'lessons', l.id), { order: (l.order ?? i) - 1 });
+                await updateDoc(doc(db, 'courses', cid, 'lessons', lessons[i - 1].id), { order: i }); reload();
+              }}>↑</button>
+              <button aria-label="Move down" disabled={i === lessons.length - 1} onClick={async () => {
+                if (!db) return;
+                await updateDoc(doc(db, 'courses', cid, 'lessons', l.id), { order: (l.order ?? i) + 1 });
+                await updateDoc(doc(db, 'courses', cid, 'lessons', lessons[i + 1].id), { order: i }); reload();
+              }}>↓</button>
+              <button className="text-red-600" onClick={async () => {
+                if (db && confirm('Delete?')) {
+                  await deleteDoc(doc(db, 'courses', cid, 'lessons', l.id));
+                  try { await updateDoc(doc(db, 'courses', cid), { lessonCount: Math.max(0, lessons.length - 1) }); } catch { /* ignore */ }
+                  reload();
+                }
+              }}>Delete</button>
+            </div>
+            {editingId === l.id && (
+              <div className="mt-2 grid gap-2 border-t border-slate-100 pt-2 dark:border-slate-800">
+                <div className="grid grid-cols-2 gap-2">
+                  <input className="input" placeholder="Title" value={editForm.title} onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))} aria-label="Lesson title" />
+                  <input className="input" placeholder="Duration (mm:ss)" value={editForm.duration} onChange={(e) => setEditForm((f) => ({ ...f, duration: e.target.value }))} aria-label="Duration" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input className="input" placeholder="Creator name" value={editForm.creator} onChange={(e) => setEditForm((f) => ({ ...f, creator: e.target.value }))} aria-label="Creator" />
+                  <input className="input" placeholder="Channel URL" value={editForm.channelUrl} onChange={(e) => setEditForm((f) => ({ ...f, channelUrl: e.target.value }))} aria-label="Channel URL" />
+                </div>
+                <textarea className="input font-mono text-xs" placeholder='Resources JSON' value={editForm.resources} onChange={(e) => setEditForm((f) => ({ ...f, resources: e.target.value }))} aria-label="Resources JSON" />
+                <div className="flex gap-2">
+                  <button className="btn-primary !py-1 text-xs" onClick={async () => {
+                    if (!db) return;
+                    let res: any[] = [];
+                    try { res = JSON.parse(editForm.resources || '[]'); }
+                    catch { push('Resources must be valid JSON'); return; }
+                    await updateDoc(doc(db, 'courses', cid, 'lessons', l.id), {
+                      title: editForm.title.trim() || l.title,
+                      duration: editForm.duration.trim(),
+                      creator: editForm.creator.trim(),
+                      channelUrl: editForm.channelUrl.trim(),
+                      resources: res
+                    });
+                    setEditingId(null); reload(); push('Lesson updated');
+                  }}>Save</button>
+                  <button className="btn-ghost !py-1 text-xs" onClick={() => setEditingId(null)}>Cancel</button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
