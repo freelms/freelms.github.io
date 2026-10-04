@@ -12,7 +12,7 @@ export default defineConfig({
       manifest: {
         name: 'FreeLMS GitHub — Free Training Platform',
         short_name: 'FreeLMS',
-        description: 'Free for everyone. No ads.',
+        description: 'Free for everyone.',
         theme_color: '#4f46e5',
         background_color: '#ffffff',
         display: 'standalone',

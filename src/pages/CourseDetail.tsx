@@ -145,7 +145,7 @@ export default function CourseDetail() {
             <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> {lessonCount} video lessons</li>
             <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Quizzes with instant feedback</li>
             <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Notes + progress tracking</li>
-            <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Lifetime access, no ads</li>
+            <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Lifetime access</li>
           </ul>
           <div className="mt-4">
             {enrolled

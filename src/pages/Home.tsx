@@ -157,14 +157,14 @@ export default function Home({ lessonsByCourse, setLessons }: HomeProps) {
         </div>
         <div className="relative p-6 sm:p-10">
           <p className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-100">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> FreeLMS GitHub · Free forever · No ads
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> FreeLMS GitHub · Free forever
           </p>
           <h1 className="mt-3 max-w-2xl text-3xl font-extrabold leading-[1.08] tracking-tight sm:text-[2.75rem]">
             FreeLMS GitHub: free online courses for everyone. <span className="bg-gradient-to-r from-indigo-300 to-violet-300 bg-clip-text text-transparent">Learn anything, at your pace.</span>
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-300">
             FreeLMS GitHub is a free online courses platform with curated video training, lesson-by-lesson
-            progress tracking, quizzes with instant feedback and personal notes. No fees. No ads. Just learning — from web development and freelancing to
+            progress tracking, quizzes with instant feedback and personal notes. Just learning — from web development and freelancing to
             everyday digital skills.
           </p>
           <div className="mt-5 flex flex-wrap gap-2.5">
@@ -299,7 +299,7 @@ export default function Home({ lessonsByCourse, setLessons }: HomeProps) {
 }
 
 const FAQS = [
-  { q: 'Is FreeLMS really free?', a: 'Yes. Every course on FreeLMS GitHub is 100% free, forever. No fees, no ads, no paywalled lessons.' },
+  { q: 'Is FreeLMS really free?', a: 'Yes. Every course on FreeLMS GitHub is 100% free, forever. No fees, no paywalled lessons.' },
   { q: 'How do courses work?', a: 'Each course is a curated series of video lessons with a weekly timetable, quizzes with instant feedback, personal notes and a progress tracker. Enroll once, learn at your own pace.' },
   { q: 'How is my progress saved?', a: 'Enroll free with your account and every lesson you complete, quiz attempt and note is saved automatically, so you can continue learning on any device.' },
   { q: 'Who creates the videos?', a: 'Lessons embed videos from independent creators using the official YouTube player. Every creator is credited with channel and original-video links — we never re-upload their work.' }
