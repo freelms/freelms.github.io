@@ -228,7 +228,7 @@ function LessonsTab() {
   };
   useEffect(() => { reload(); }, [cid]);
 
-  const addOne = async (yt: string, t: string) => {
+  const addOne = async (yt: string, t: string, num?: number) => {
     const videoId = extractVideoId(yt);
     if (!videoId || !db || !cid) { push(`Bad URL: ${yt}`); return; }
     // Fetch the real video title (and creator) via YouTube oEmbed — no API key needed.
@@ -251,6 +251,8 @@ function LessonsTab() {
       }
       if (!title) title = videoId;
     }
+    // Bulk lines get their line number as a prefix: "#3 Data types and variables".
+    if (num !== undefined) title = `#${num} ${title.replace(/^#\d+\s+/, '')}`;
     let res: any[] = [];
     try { res = JSON.parse(resources || '[]'); } catch { res = []; }
     await addDoc(collection(db, 'courses', cid, 'lessons'), {
@@ -283,7 +285,7 @@ function LessonsTab() {
         <button className="btn-ghost" disabled={!cid || !bulk.trim()} onClick={async () => {
           const lines = bulk.split('\n').map((s) => s.trim()).filter(Boolean);
           push(`Adding ${lines.length} videos, fetching titles…`);
-          for (const line of lines) await addOne(line, line);
+          for (let i = 0; i < lines.length; i++) await addOne(lines[i], lines[i], i + 1);
           setBulk(''); reload(); push('Bulk added with video titles');
         }}>Add all URLs</button>
         <button className="btn-ghost" disabled={!cid} onClick={async () => {
