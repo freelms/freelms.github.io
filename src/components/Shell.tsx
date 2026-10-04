@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { GraduationCap, Moon, Sun, Home, BookOpen, ShieldCheck, User as UserIcon, LogOut, Flame, Search, BarChart2, Menu, X } from 'lucide-react';
+import { GraduationCap, Moon, Sun, Home, BookOpen, ShieldCheck, User as UserIcon, LogOut, Flame, Search, BarChart2, Menu, X, FileText } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
@@ -61,6 +61,7 @@ export function Navbar({ onSearch }: { onSearch: () => void }) {
               {open && (
                 <div className="card absolute right-0 mt-2 w-48 p-1.5 text-sm">
                   <Link to="/profile" className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800"><UserIcon size={15} /> Profile</Link>
+                  <Link to="/disclaimer" className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800"><FileText size={15} /> Disclaimer</Link>
                   {isAdmin && <Link to="/admin" className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800"><ShieldCheck size={15} /> Admin</Link>}
                   <button
                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800"
@@ -102,6 +103,7 @@ export function MobileDrawer({ open, close }: { open: boolean; close: () => void
     { to: '/my-courses', label: 'My Courses', icon: BookOpen, show: !!user },
     { to: '/metrics', label: 'Metrics', icon: BarChart2, show: !!user },
     { to: '/paths', label: 'Paths', icon: Flame, show: true },
+    { to: '/disclaimer', label: 'Disclaimer', icon: FileText, show: true },
     { to: '/admin', label: 'Admin', icon: ShieldCheck, show: isAdmin },
     { to: '/profile', label: 'Profile', icon: UserIcon, show: !!user }
   ].filter((l) => l.show);
@@ -179,6 +181,7 @@ export function Footer() {
       <FooterCategories />
       <p className="mt-1 flex flex-wrap justify-center gap-3">
         <Link to="/about" className="underline">About</Link>
+        <Link to="/disclaimer" className="underline">Disclaimer</Link>
         <Link to="/privacy" className="underline">Privacy</Link>
         <Link to="/terms" className="underline">Terms</Link>
       </p>

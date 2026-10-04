@@ -65,6 +65,7 @@ export default function App() {
                   <Route path="/paths" element={<ErrorBoundary><Paths /></ErrorBoundary>} />
                   <Route path="/privacy" element={<StaticPage kind="privacy" />} />
                   <Route path="/terms" element={<StaticPage kind="terms" />} />
+                  <Route path="/disclaimer" element={<StaticPage kind="disclaimer" />} />
                   <Route path="/about" element={<StaticPage kind="about" />} />
                 </Routes>
               </main>

@@ -526,9 +526,46 @@ async function main() {
     console.log(`[prerender] tag/${t.slug}/ — OK (${tCourses.length} courses)`);
   }
 
+  // ---- Static disclaimer page (same content as the in-app /disclaimer route).
+  const disUrl = `${site}disclaimer/`;
+  const disDir = join(dist, 'disclaimer');
+  mkdirSync(disDir, { recursive: true });
+  writeFileSync(join(disDir, 'index.html'), `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Content Disclaimer — How FreeLMS Uses YouTube Videos | FreeLMS</title>
+<meta name="description" content="FreeLMS never re-uploads videos. Lessons play originals via YouTube embeds, giving creators views while students learn. Read the full disclaimer." />
+<link rel="canonical" href="${esc(disUrl)}" />
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="FreeLMS" />
+<meta property="og:title" content="Content Disclaimer — How FreeLMS Uses YouTube Videos | FreeLMS" />
+<meta property="og:description" content="We embed originals, never re-upload. Creators keep views and credit; students get structured courses." />
+<meta property="og:url" content="${esc(disUrl)}" />
+<style>body{font-family:system-ui,sans-serif;max-width:720px;margin:0 auto;padding:24px;color:#1e293b}h1{font-size:28px}a{color:#4f46e5}.cta{display:inline-block;background:#4f46e5;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600}</style>
+</head>
+<body>
+<nav aria-label="Breadcrumb"><a href="${site}">FreeLMS</a> › Content Disclaimer</nav>
+<h1>Content Disclaimer — how FreeLMS uses YouTube videos</h1>
+<h2>We do not re-upload or reuse anyone's work</h2>
+<p>Every lesson plays the original video through YouTube's official embedded player, streamed directly from YouTube's servers. We never download, copy, edit, mirror or claim any video, thumbnail, title or description.</p>
+<h2>Embeds give creators views — good for both</h2>
+<p>Watching a lesson here registers as a view on the original YouTube video, exactly as on YouTube. Watch time and engagement flow to the creator's channel, supporting their growth and revenue. Each lesson links the creator's channel and the original video so students can subscribe and explore more.</p>
+<h2>What students get</h2>
+<p>The same free videos, reorganized into structured courses with a syllabus, progress tracking, quizzes, timestamped notes and discussion — a scattered playlist becomes a complete course.</p>
+<h2>Permission and takedown</h2>
+<p>Creators: to feature, re-credit or remove a video for any reason, use the "Report or takedown request" link on any course or video. We act within 48 hours.</p>
+${catNav}
+<p><a class="cta" href="${site}">Browse free courses</a></p>
+</body>
+</html>`);
+  console.log('[prerender] disclaimer/ — OK');
+
   // Sitemap: real URLs only (no hash fragments), lastmod per course/tag.
   const urls = [
     { loc: site, lastmod: new Date().toISOString().slice(0, 10) },
+    { loc: disUrl, lastmod: new Date().toISOString().slice(0, 10) },
     ...courses.map((c) => ({ loc: `${site}course/${c.id}/`, lastmod: day(c._updated) })),
     ...pageTags.map((t) => ({ loc: `${site}tag/${t.slug}/`, lastmod: day(t.updatedAt) }))
   ];

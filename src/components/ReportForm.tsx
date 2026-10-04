@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useToast } from '../hooks/useToast';
@@ -28,7 +29,7 @@ export function ReportForm({ courseId, lessonId }: { courseId?: string; lessonId
         </select>
         <textarea className="input" placeholder="Details" value={details} onChange={(e) => setDetails(e.target.value)} required />
         <input className="input" placeholder="Your email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <p className="text-xs text-slate-500">Contact: {import.meta.env.VITE_CONTACT_EMAIL}</p>
+        <p className="text-xs text-slate-500">Contact: {import.meta.env.VITE_CONTACT_EMAIL} · <Link to="/disclaimer" className="underline">How we use videos (Disclaimer)</Link></p>
         <div className="flex gap-2">
           <button className="btn-primary" type="submit">Send</button>
           <button className="btn-ghost" type="button" onClick={() => setOpen(false)}>Cancel</button>
