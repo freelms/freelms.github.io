@@ -451,7 +451,9 @@ function QuizzesTab() {
         {v.ok && <p className="text-xs text-green-700">Valid ✓ {(v as any).quiz?.questions?.length} questions {lessonId && '(quick check)'}</p>}
         <button className="btn-primary" disabled={!cid || !v.ok} onClick={async () => {
           if (!db || !v.ok || !(v as any).quiz) return;
-          await addDoc(collection(db, 'courses', cid, 'quizzes'), { ...(v as any).quiz, lessonId: lessonId || undefined, createdAt: serverTimestamp() });
+          const payload: any = { ...(v as any).quiz, createdAt: serverTimestamp() };
+          if (lessonId) payload.lessonId = lessonId; // Firestore rejects explicit undefined
+          await addDoc(collection(db, 'courses', cid, 'quizzes'), payload);
           push('Quiz saved'); reload();
         }}>Save quiz</button>
       </div>

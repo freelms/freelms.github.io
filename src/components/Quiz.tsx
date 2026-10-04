@@ -200,5 +200,10 @@ export function validateQuizJson(raw: string): { ok: boolean; errors: string[]; 
     if (typeof q.answerIndex !== 'number' || q.answerIndex < 0 || q.answerIndex >= (q.options?.length ?? 0)) errors.push(`Q${i + 1}: bad answerIndex.`);
   });
   if (errors.length) return { ok: false, errors };
-  return { ok: true, errors: [], quiz: { title: j.title, passingScore: j.passingScore, questions: j.questions, lessonId: j.lessonId, timeLimitMinutes: j.timeLimitMinutes, shuffle: j.shuffle ?? true } };
+  // Omit undefined optionals — Firestore rejects explicit undefined values.
+  const quiz: any = { title: j.title, passingScore: j.passingScore, questions: j.questions };
+  if (j.lessonId) quiz.lessonId = j.lessonId;
+  if (j.timeLimitMinutes !== undefined) quiz.timeLimitMinutes = j.timeLimitMinutes;
+  quiz.shuffle = j.shuffle ?? true;
+  return { ok: true, errors: [], quiz };
 }
