@@ -307,14 +307,24 @@ function LessonsTab() {
             {editingId === l.id && (
               <div className="mt-2 grid gap-2 border-t border-slate-100 pt-2 dark:border-slate-800">
                 <div className="grid grid-cols-2 gap-2">
-                  <input className="input" placeholder="Title" value={editForm.title} onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))} aria-label="Lesson title" />
-                  <input className="input" placeholder="Duration (mm:ss)" value={editForm.duration} onChange={(e) => setEditForm((f) => ({ ...f, duration: e.target.value }))} aria-label="Duration" />
+                  <label className="block text-xs font-medium text-slate-500">Lesson title
+                    <input className="input mt-1" placeholder="Lesson title" value={editForm.title} onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))} aria-label="Lesson title" />
+                  </label>
+                  <label className="block text-xs font-medium text-slate-500">Duration (mm:ss)
+                    <input className="input mt-1" placeholder="Duration (mm:ss)" value={editForm.duration} onChange={(e) => setEditForm((f) => ({ ...f, duration: e.target.value }))} aria-label="Duration" />
+                  </label>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <input className="input" placeholder="Creator name" value={editForm.creator} onChange={(e) => setEditForm((f) => ({ ...f, creator: e.target.value }))} aria-label="Creator" />
-                  <input className="input" placeholder="Channel URL" value={editForm.channelUrl} onChange={(e) => setEditForm((f) => ({ ...f, channelUrl: e.target.value }))} aria-label="Channel URL" />
+                  <label className="block text-xs font-medium text-slate-500">Creator name
+                    <input className="input mt-1" placeholder="Creator name" value={editForm.creator} onChange={(e) => setEditForm((f) => ({ ...f, creator: e.target.value }))} aria-label="Creator" />
+                  </label>
+                  <label className="block text-xs font-medium text-slate-500">Channel URL
+                    <input className="input mt-1" placeholder="Channel URL" value={editForm.channelUrl} onChange={(e) => setEditForm((f) => ({ ...f, channelUrl: e.target.value }))} aria-label="Channel URL" />
+                  </label>
                 </div>
-                <textarea className="input font-mono text-xs" placeholder='Resources JSON' value={editForm.resources} onChange={(e) => setEditForm((f) => ({ ...f, resources: e.target.value }))} aria-label="Resources JSON" />
+                <label className="block text-xs font-medium text-slate-500">Resources JSON
+                  <textarea className="input mt-1 font-mono text-xs" placeholder='Resources JSON' value={editForm.resources} onChange={(e) => setEditForm((f) => ({ ...f, resources: e.target.value }))} aria-label="Resources JSON" />
+                </label>
                 <div className="flex gap-2">
                   <button className="btn-primary !py-1 text-xs" onClick={async () => {
                     if (!db) return;
