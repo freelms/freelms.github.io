@@ -495,6 +495,7 @@ function QuizzesTab() {
   const [list, setList] = useState<Quiz[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [lessonId, setLessonId] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
   const reload = async () => {
     if (!db || !cid) return;
     const s = await getDocs(collection(db, 'courses', cid, 'quizzes'));
@@ -524,17 +525,43 @@ function QuizzesTab() {
         {v.ok && <p className="text-xs text-green-700">Valid ✓ {(v as any).quiz?.questions?.length} questions {lessonId && '(quick check)'}</p>}
         <AsyncButton className="btn-primary" disabled={!cid || !v.ok} onPress={async () => {
           if (!db || !v.ok || !(v as any).quiz) return;
-          const payload: any = { ...(v as any).quiz, createdAt: serverTimestamp() };
+          const payload: any = { ...(v as any).quiz, updatedAt: serverTimestamp() };
           if (lessonId) payload.lessonId = lessonId; // Firestore rejects explicit undefined
-          await addDoc(collection(db, 'courses', cid, 'quizzes'), payload);
-          push('Quiz saved'); reload();
-        }}>Save quiz</AsyncButton>
+          else payload.lessonId = null;
+          if (editingId) {
+            await updateDoc(doc(db, 'courses', cid, 'quizzes', editingId), payload);
+            push('Quiz updated');
+          } else {
+            payload.createdAt = serverTimestamp();
+            await addDoc(collection(db, 'courses', cid, 'quizzes'), payload);
+            push('Quiz saved');
+          }
+          setEditingId(null); setRaw(SAMPLE_QUIZ_JSON); setLessonId(''); reload();
+        }}>{editingId ? 'Update quiz' : 'Save quiz'}</AsyncButton>
+        {editingId && (
+          <button className="btn-ghost" onClick={() => { setEditingId(null); setRaw(SAMPLE_QUIZ_JSON); setLessonId(''); }}>
+            Cancel edit
+          </button>
+        )}
       </div>
       <div className="space-y-2">
         {list.map((qz) => (
           <div key={qz.id} className="card p-3 text-sm">
-            <p className="font-medium">{qz.title} ({qz.questions.length} Qs){qz.lessonId && <span className="chip ml-2">quick check</span>}</p>
-            <button className="mt-1 text-xs text-red-600" onClick={async () => { if (db && confirm('Delete?')) { await deleteDoc(doc(db, 'courses', cid, 'quizzes', qz.id)); reload(); } }}>Delete</button>
+            <p className="font-medium">{qz.title} ({qz.questions.length} Qs){qz.lessonId && <span className="chip ml-2">quick check</span>}{editingId === qz.id && <span className="chip ml-2 bg-indigo-100 text-indigo-700">editing</span>}</p>
+            <div className="mt-1 flex gap-3">
+              <button className="text-xs text-indigo-600 underline" onClick={() => {
+                setEditingId(qz.id);
+                setRaw(JSON.stringify({
+                  title: qz.title,
+                  passingScore: qz.passingScore,
+                  ...(qz.timeLimitMinutes !== undefined ? { timeLimitMinutes: qz.timeLimitMinutes } : {}),
+                  ...(qz.shuffle !== undefined ? { shuffle: qz.shuffle } : {}),
+                  questions: qz.questions
+                }, null, 2));
+                setLessonId(qz.lessonId ?? '');
+              }}>Edit</button>
+              <button className="text-xs text-red-600 underline" onClick={async () => { if (db && confirm('Delete?')) { await deleteDoc(doc(db, 'courses', cid, 'quizzes', qz.id)); if (editingId === qz.id) { setEditingId(null); setRaw(SAMPLE_QUIZ_JSON); setLessonId(''); } reload(); } }}>Delete</button>
+            </div>
           </div>
         ))}
       </div>
