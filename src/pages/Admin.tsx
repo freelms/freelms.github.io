@@ -23,10 +23,43 @@ const emptyCourse: Partial<Course> = {
 
 export default function Admin() {
   const [tab, setTab] = useState<Tab>('courses');
+  const [clearing, setClearing] = useState(false);
+  const { push } = useToast();
   const tabs: Tab[] = ['courses', 'lessons', 'quizzes', 'analytics', 'students', 'announce', 'reports', 'moderation', 'paths', 'import', 'tags'];
   return (
     <div className="mx-auto max-w-6xl px-3 py-4">
-      <h1 className="font-bold">Admin</h1>
+      <div className="flex flex-wrap items-center gap-2">
+        <h1 className="font-bold">Admin</h1>
+        <button
+          className="btn-ghost ml-auto !py-1.5 text-xs"
+          disabled={clearing}
+          title="Clears localStorage/sessionStorage caches, all CacheStorage, and unregisters service workers on THIS device, then reloads"
+          onClick={async () => {
+            if (!confirm('Clear all site caches on this device and reload? (Use after deploys when pages look stale.)')) return;
+            setClearing(true);
+            try {
+              for (let i = localStorage.length - 1; i >= 0; i--) {
+                const k = localStorage.key(i);
+                if (k && (k.startsWith('lh-') || k.startsWith('lh_'))) localStorage.removeItem(k);
+              }
+              sessionStorage.clear();
+              if ('caches' in window) {
+                for (const name of await caches.keys()) await caches.delete(name);
+              }
+              if ('serviceWorker' in navigator) {
+                for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
+              }
+              push('All caches cleared — reloading fresh…');
+              setTimeout(() => location.reload(), 800);
+            } catch (e: any) {
+              push('Cache clear failed: ' + (e?.message ?? e));
+              setClearing(false);
+            }
+          }}
+        >
+          {clearing ? 'Clearing…' : '🧹 Clear site caches'}
+        </button>
+      </div>
       <div className="mt-2 flex gap-1.5 overflow-x-auto" role="tablist">
         {tabs.map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`chip !px-3 !py-1.5 capitalize ${tab === t ? '!bg-indigo-600 !text-white' : ''}`}>{t}</button>
