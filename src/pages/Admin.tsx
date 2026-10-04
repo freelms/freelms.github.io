@@ -218,7 +218,7 @@ function LessonsTab() {
   const [channelUrl, setChannelUrl] = useState('');
   const [resources, setResources] = useState('[]');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ title: '', duration: '', creator: '', channelUrl: '', resources: '[]' });
+  const [editForm, setEditForm] = useState({ title: '', duration: '', creator: '', channelUrl: '', videoUrl: '', resources: '[]' });
   const vid = extractVideoId(url);
 
   const reload = async () => {
@@ -330,6 +330,7 @@ function LessonsTab() {
                 setEditForm({
                   title: l.title ?? '', duration: l.duration ?? '',
                   creator: l.creator ?? '', channelUrl: l.channelUrl ?? '',
+                  videoUrl: l.videoUrl ?? `https://www.youtube.com/watch?v=${l.videoId}`,
                   resources: JSON.stringify(l.resources ?? [])
                 });
               }}>Edit</button>
@@ -372,19 +373,33 @@ function LessonsTab() {
                 <label className="block text-xs font-medium text-slate-500">Resources JSON
                   <textarea className="input mt-1 font-mono text-xs" placeholder='Resources JSON' value={editForm.resources} onChange={(e) => setEditForm((f) => ({ ...f, resources: e.target.value }))} aria-label="Resources JSON" />
                 </label>
+                <label className="block text-xs font-medium text-slate-500">Video URL (change to replace the video — lesson progress is kept)
+                  <span className="mt-1 flex gap-1.5">
+                    <input className="input font-mono text-xs" value={editForm.videoUrl} onChange={(e) => setEditForm((f) => ({ ...f, videoUrl: e.target.value }))} aria-label="Video URL" />
+                    <button type="button" className="btn-ghost shrink-0 !px-2 !py-1 text-xs" onClick={() => { navigator.clipboard.writeText(editForm.videoUrl); push('Video URL copied'); }} aria-label="Copy video URL">Copy</button>
+                  </span>
+                </label>
                 <div className="flex gap-2">
                   <button className="btn-primary !py-1 text-xs" onClick={async () => {
                     if (!db) return;
                     let res: any[] = [];
                     try { res = JSON.parse(editForm.resources || '[]'); }
                     catch { push('Resources must be valid JSON'); return; }
-                    await updateDoc(doc(db, 'courses', cid, 'lessons', l.id), {
+                    const patch: any = {
                       title: editForm.title.trim() || l.title,
                       duration: editForm.duration.trim(),
                       creator: editForm.creator.trim(),
                       channelUrl: editForm.channelUrl.trim(),
                       resources: res
-                    });
+                    };
+                    const newId = extractVideoId(editForm.videoUrl);
+                    if (!newId) { push('Video URL is not a valid YouTube link'); return; }
+                    if (newId !== l.videoId) {
+                      patch.videoId = newId;
+                      patch.videoUrl = `https://www.youtube.com/watch?v=${newId}`;
+                      patch.broken = false;
+                    }
+                    await updateDoc(doc(db, 'courses', cid, 'lessons', l.id), patch);
                     setEditingId(null); reload(); push('Lesson updated');
                   }}>Save</button>
                   <button className="btn-ghost !py-1 text-xs" onClick={() => setEditingId(null)}>Cancel</button>
