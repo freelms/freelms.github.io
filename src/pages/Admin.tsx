@@ -288,6 +288,28 @@ function LessonsTab() {
         }}>Add all URLs</button>
         <button className="btn-ghost" disabled={!cid} onClick={async () => {
           if (!db) return;
+          const urlTitled = lessons.filter((l) => /https?:\/\/|youtu\.be/i.test(l.title) || l.title.trim() === l.videoId);
+          if (!urlTitled.length) { push('No URL-titled lessons — all have real titles'); return; }
+          push(`Fixing ${urlTitled.length} URL-titled lesson(s)…`);
+          let fixed = 0;
+          for (const l of urlTitled) {
+            try {
+              const r = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${l.videoId}`)}&format=json`);
+              if (!r.ok) continue;
+              const j = await r.json();
+              const patch: any = {};
+              if (j.title) patch.title = j.title;
+              if (j.author_name && !(l.creator ?? '').trim()) patch.creator = j.author_name;
+              if (Object.keys(patch).length) {
+                await updateDoc(doc(db, 'courses', cid, 'lessons', l.id), patch);
+                fixed++;
+              }
+            } catch { /* skip failures, keep old title */ }
+          }
+          reload(); push(`Fixed ${fixed}/${urlTitled.length} title(s)`);
+        }}>Fix URL titles (bulk)</button>
+        <button className="btn-ghost" disabled={!cid} onClick={async () => {
+          if (!db) return;
           for (const l of lessons) {
             const ok = await checkVideoEmbeddable(l.videoId);
             await updateDoc(doc(db, 'courses', cid, 'lessons', l.id), { broken: !ok, lastChecked: serverTimestamp() });
