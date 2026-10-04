@@ -158,19 +158,25 @@ function CoursesTab() {
           {form.thumbnail && (
             <button className="text-xs text-red-600 underline" onClick={() => set('thumbnail', '')}>Remove thumbnail</button>
           )}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <select className="input" value={form.status} onChange={(e) => set('status', e.target.value)} aria-label="Status">
               <option value="draft">draft</option><option value="published">published</option><option value="archived">archived</option>
             </select>
             <select className="input" value={form.level} onChange={(e) => set('level', e.target.value)} aria-label="Level">
               <option>Beginner</option><option>Intermediate</option><option>Advanced</option>
             </select>
-            <input className="input" placeholder="Timezone" value={(form as any).timezone ?? ''} onChange={(e) => set('timezone', e.target.value)} />
           </div>
           <textarea className="input" placeholder="Learning outcomes (one per line)" value={Array.isArray(form.outcomes) ? form.outcomes.join('\n') : (form.outcomes as any ?? '')} onChange={(e) => set('outcomes', e.target.value.split('\n'))} />
           <textarea className="input" placeholder="Prerequisite course IDs (comma separated)" value={(form.prerequisiteIds ?? []).join(',')} onChange={(e) => set('prerequisiteIds', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} />
-          <textarea className="input" placeholder="Credits JSON: [{creator, channelUrl, videoUrl}]" value={JSON.stringify(form.credits ?? [])} onChange={(e) => { try { set('credits', JSON.parse(e.target.value)); } catch { /* ignore */ } }} />
-          <textarea className="input" placeholder="Schedule JSON: [{day, time, topic, link}]" value={JSON.stringify(form.schedule ?? [])} onChange={(e) => { try { set('schedule', JSON.parse(e.target.value)); } catch { /* ignore */ } }} />
+          <label className="block text-xs font-medium text-slate-500">Credits JSON — [{'{creator, channelUrl, videoUrl}'}]
+            <textarea className="input mt-1 font-mono text-xs" placeholder='Credits JSON: [{creator, channelUrl, videoUrl}]' value={JSON.stringify(form.credits ?? [])} onChange={(e) => { try { set('credits', JSON.parse(e.target.value)); } catch { /* ignore */ } }} aria-label="Credits JSON" />
+          </label>
+          <label className="block text-xs font-medium text-slate-500">Schedule JSON — weekly timetable rows
+            <textarea className="input mt-1 font-mono text-xs" placeholder='Schedule JSON: [{day, time, topic, link}]' value={JSON.stringify(form.schedule ?? [])} onChange={(e) => { try { set('schedule', JSON.parse(e.target.value)); } catch { /* ignore */ } }} aria-label="Schedule JSON" />
+          </label>
+          <label className="block text-xs font-medium text-slate-500">Timezone (for timetable times)
+            <input className="input mt-1" placeholder="e.g. Asia/Karachi" value={(form as any).timezone ?? ''} onChange={(e) => set('timezone', e.target.value)} aria-label="Timezone" />
+          </label>
           <div className="flex gap-2">
             <AsyncButton className="btn-primary" onPress={save}>Save</AsyncButton>
             {editing && <button className="btn-ghost" onClick={() => { setEditing(null); setOrigTags(null); setForm({ ...emptyCourse }); }}>Cancel</button>}
