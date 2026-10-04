@@ -53,6 +53,7 @@ Pick a course → paste quiz JSON (or **Upload .json**) → attach to a lesson f
 
 ### Other tabs
 - **Analytics** — enrollments/completions per course, 30-day enrollment chart, average quiz scores, hardest-questions table (from wrong-answer counts).
+- **Tags** — create/edit/delete reusable categories (slug auto-generated, immutable after creation). Fields: name, description (120+ chars needed for an SEO page), color, icon, parent (one level), menu/featured toggles, SEO fields. Merge tool moves all courses source→target. "Recalculate counts" repairs `courseCount`. Rename = display-name only; slugs never change.
 - **Students** — searchable + paginated, with enrolled-course count, avg progress, last active; disable account or mute from commenting.
 - **Announce** — global or per-course banner with expiry; students dismiss it (remembered per user).
 - **Reports** — student takedown/error reports from course/video pages; toggle resolved.
@@ -60,14 +61,26 @@ Pick a course → paste quiz JSON (or **Upload .json**) → attach to a lesson f
 - **Paths** — group course IDs into a named learning path shown on `/paths` with progress.
 - **Import** — paste one full-course JSON (course + lessons + quizzes) → preview counts → one batched import. Sample + AI prompt buttons included.
 
+### Student pages
+- **`/my-courses`** — enrolled courses with progress, filters (all/in-progress/completed/not-started), search, stats.
+- **`/metrics`** — personal analytics: KPI cards, lessons-over-time, per-course completion, quiz-score trend, time split, 365-day streak heatmap, recent quiz attempts.
+- **`/tag/:slug`** — public category pages with level filter, sorting, related tags. Prerendered statically for SEO (see below).
+- **Reviews** — enrolled students rate 1–5 + text on course pages; public average/count; cards show ★ ratings.
+
+### Caching
+- Course list: `sessionStorage` (60s TTL). Tag menu: memory + `localStorage` (5-min TTL, background refresh). Every tag/course write invalidates the menu cache. `/admin` header has a "Clear site caches" button (storage + CacheStorage + service workers) for stale-device rescue.
+
 ## Data model & reads (E16)
 
 - `courses/{id}` — course doc (`status: draft|published|archived`, denormalized `lessonCount`, `enrollmentCount`). List cached in memory + `sessionStorage` (60s TTL).
 - `courses/{id}/lessons/{lid}` — enrolled/admin only. Titles prefetched once for search palette.
 - `courses/{id}/quizzes/{qid}` — enrolled/admin only.
 - `users/{uid}` + subcollections `enrollments`, `quizAttempts`, `notes`, `bookmarks` — owner/admin only.
+- `tags/{slug}` — public read; admin write. `courseCount` = published courses only, synced on course save/delete/merge via batched increments.
+- `courses/{id}/reviews/{uid}` — public read; enrolled-owner write (rating 1–5); admin delete. Aggregates `avgRating`/`ratingCount` on the course doc.
 - `stats/{courseId}` — `{enrollmentCount, completionCount}` aggregates (one read per course on admin analytics).
 - `announcements`, `paths`, `reports`, `comments` as documented in the admin guide.
+- **Rules ↔ query contract:** any student `list` on a rule-branched collection MUST constrain `where('status','==','published')` (or equivalent) — unconstrained lists are rejected. Split `get`/`list` where lists must stay lookup-free (Firestore caps `get()`/`exists()` per list request).
 - No `onSnapshot` except where needed; no N+1 beyond one-per-course lesson prefetch.
 
 ## Rules tests / emulators
