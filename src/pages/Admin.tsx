@@ -9,12 +9,13 @@ import { validateQuizJson } from '../components/Quiz';
 import { SAMPLE_QUIZ_JSON, SAMPLE_COURSE_JSON, QUIZ_AI_PROMPT, COURSE_AI_PROMPT } from '../lib/samples';
 
 import { ModerationTab } from '../components/Comments';
+import { StudentDashboard } from '../components/StudentDashboard';
 import { TagsTab } from '../components/TagsTab';
 import { TagMultiSelect } from '../components/TagMultiSelect';
 import { AsyncButton } from '../components/AsyncButton';
 import { denormalizeTags, syncTagCounters } from '../lib/tags';
 
-type Tab = 'courses' | 'lessons' | 'quizzes' | 'analytics' | 'students' | 'announce' | 'reports' | 'moderation' | 'paths' | 'import' | 'tags';
+type Tab = 'courses' | 'lessons' | 'quizzes' | 'analytics' | 'students' | 'student' | 'announce' | 'reports' | 'moderation' | 'paths' | 'import' | 'tags';
 
 const emptyCourse: Partial<Course> = {
   title: '', description: '', topic: '', instructor: '', thumbnail: '', status: 'draft',
@@ -25,7 +26,7 @@ export default function Admin() {
   const [tab, setTab] = useState<Tab>('courses');
   const [clearing, setClearing] = useState(false);
   const { push } = useToast();
-  const tabs: Tab[] = ['courses', 'lessons', 'quizzes', 'analytics', 'students', 'announce', 'reports', 'moderation', 'paths', 'import', 'tags'];
+  const tabs: Tab[] = ['courses', 'lessons', 'quizzes', 'analytics', 'students', 'student', 'announce', 'reports', 'moderation', 'paths', 'import', 'tags'];
   return (
     <div className="mx-auto max-w-6xl px-3 py-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -71,6 +72,7 @@ export default function Admin() {
         {tab === 'quizzes' && <QuizzesTab />}
         {tab === 'analytics' && <AnalyticsTab />}
         {tab === 'students' && <StudentsTab />}
+        {tab === 'student' && <StudentDashboard />}
         {tab === 'announce' && <AnnounceTab />}
         {tab === 'reports' && <ReportsTab />}
         {tab === 'moderation' && <ModerationTab />}
