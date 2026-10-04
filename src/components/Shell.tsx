@@ -8,6 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { streakCount } from './streak';
 import { TagNavigation, FooterCategories } from './TagNavigation';
+import { fetchMenuTags } from '../lib/tags';
 
 export function Navbar({ onSearch }: { onSearch: () => void }) {
   const { user, isAdmin } = useAuth();
@@ -25,6 +26,7 @@ export function Navbar({ onSearch }: { onSearch: () => void }) {
   }, [user]);
 
   return (
+    <>
     <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/90 backdrop-blur dark:bg-slate-950/90 dark:border-slate-800">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-3">
         <button className="btn-ghost !px-2.5 md:hidden" onClick={() => setDrawer(true)} aria-label="Open menu">
@@ -43,7 +45,6 @@ export function Navbar({ onSearch }: { onSearch: () => void }) {
           <Link to="/paths" className="rounded-lg px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">Paths</Link>
         </nav>
         <div className="ml-auto flex items-center gap-1.5">
-          <span className="md:hidden"><TagNavigation mobile /></span>
           {user && streak > 0 && (
             <span className="chip" title="Daily learning streak" aria-label={`${streak} day streak`}><Flame size={13} className="text-orange-500" />{streak}</span>
           )}
@@ -75,8 +76,35 @@ export function Navbar({ onSearch }: { onSearch: () => void }) {
           )}
         </div>
       </div>
-      <MobileDrawer open={drawer} close={() => setDrawer(false)} />
     </header>
+    <MobileDrawer open={drawer} close={() => setDrawer(false)} />
+    </>
+  );
+}
+
+function DrawerCategories({ close }: { close: () => void }) {
+  const [cats, setCats] = useState<{ slug: string; name: string; courseCount?: number }[]>([]);
+  useEffect(() => {
+    fetchMenuTags(db)
+      .then((list) => setCats(list.filter((t) => !t.parentSlug).map((t) => ({ slug: t.slug, name: t.name, courseCount: t.courseCount }))))
+      .catch(() => {});
+  }, []);
+  if (!cats.length) return null;
+  return (
+    <div className="mt-2 border-t border-slate-100 pt-2 dark:border-slate-800">
+      <p className="px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Categories</p>
+      {cats.slice(0, 8).map((c) => (
+        <Link
+          key={c.slug}
+          to={`/tag/${c.slug}`}
+          onClick={close}
+          className="flex items-center justify-between rounded-xl px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+        >
+          <span>{c.name}</span>
+          <span className="text-xs text-slate-400">{c.courseCount ?? 0}</span>
+        </Link>
+      ))}
+    </div>
   );
 }
 
@@ -155,6 +183,7 @@ export function MobileDrawer({ open, close }: { open: boolean; close: () => void
           {!user && (
             <Link to="/login" onClick={close} className="btn-primary mt-2 w-full">Sign in</Link>
           )}
+          <DrawerCategories close={close} />
         </nav>
         <div className="flex items-center gap-2 border-t border-slate-200 p-3 dark:border-slate-800">
           <button onClick={toggle} className="btn-ghost flex-1 !py-2 text-sm" aria-label="Toggle theme">

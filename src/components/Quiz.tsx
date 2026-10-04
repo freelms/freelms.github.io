@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { addDoc, collection, serverTimestamp, updateDoc, doc, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { AsyncButton } from './AsyncButton';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import type { Quiz } from '../types';
@@ -177,11 +178,11 @@ export function QuizRunner({ quiz, courseId, onDone }: { quiz: Quiz; courseId: s
         </div>
       )}
       <div className="mt-4">
-        <button className="btn-primary w-full !py-2.5" disabled={picked === null} onClick={() => {
+        <AsyncButton className="btn-primary w-full !py-2.5" disabled={picked === null} onPress={async () => {
           const next = [...answers, picked as number];
-          if (idx + 1 >= queue.length) finish(next);
+          if (idx + 1 >= queue.length) await finish(next);
           else { setAnswers(next); setIdx(idx + 1); setPicked(null); }
-        }}>{idx + 1 >= queue.length ? 'Finish quiz' : 'Next question →'}</button>
+        }}>{idx + 1 >= queue.length ? 'Finish quiz' : 'Next question →'}</AsyncButton>
       </div>
     </div>
   );

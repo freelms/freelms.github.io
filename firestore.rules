@@ -41,9 +41,9 @@ service cloud.firestore {
     }
 
     match /tags/{tagId} {
-      // Anyone can read tags (for catalog, filters, SEO)
-      allow read: if signedIn();
-      // Only admins can create, update, delete tags
+      // Public catalog metadata (names, counts) — readable by everyone including guests.
+      // Only admins can create, update, delete tags.
+      allow read: if true;
       allow create, update, delete: if isAdmin();
     }
 
@@ -64,12 +64,12 @@ service cloud.firestore {
     }
 
     match /paths/{pathId} {
-      allow read: if signedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     match /announcements/{annId} {
-      allow read: if signedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 

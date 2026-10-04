@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import type { Course, Lesson } from '../types';
 import { ReportForm } from '../components/ReportForm';
+import { AsyncButton } from '../components/AsyncButton';
 import { resolveThumb } from '../lib/thumb';
 import { sortLessons } from '../lib/lessons';
 
@@ -130,7 +131,7 @@ export default function CourseDetail() {
             <div className="mt-4 flex flex-wrap gap-2 lg:hidden">
               {enrolled
                 ? <Link to={`/learn/${course.id}`} className="btn-primary flex-1">Continue learning →</Link>
-                : <button onClick={enroll} className="btn-primary flex-1">Enroll now — free</button>}
+                : <AsyncButton onPress={enroll} className="btn-primary flex-1">Enroll now — free</AsyncButton>}
             </div>
           </div>
         </div>
@@ -146,7 +147,7 @@ export default function CourseDetail() {
           <div className="mt-4">
             {enrolled
               ? <Link to={`/learn/${course.id}`} className="btn-primary w-full">Continue learning →</Link>
-              : <button onClick={enroll} className="btn-primary w-full">Enroll now — free</button>}
+              : <AsyncButton onPress={enroll} className="btn-primary w-full">Enroll now — free</AsyncButton>}
             <p className="mt-2 text-center text-[11px] text-slate-500">{enrolled ? 'You’re enrolled' : 'One click, no payment'}</p>
           </div>
         </aside>

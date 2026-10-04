@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { AsyncButton } from './AsyncButton';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 
@@ -35,19 +36,18 @@ export function LessonComments({ courseId, lessonId }: { courseId: string; lesso
       <h3 className="text-sm font-semibold">Discussion</h3>
       {muted && <p className="mt-2 text-sm text-red-600">You are muted from commenting. Contact support.</p>}
       {!muted && (
-      <form className="mt-2 flex gap-2" onSubmit={async (e) => {
-        e.preventDefault();
-        if (!db || !user || text.trim().length === 0 || text.length > 1000) return;
-        await addDoc(collection(db, 'comments'), {
-          courseId, lessonId, uid: user.uid, displayName: user.displayName ?? user.email,
-          text: text.trim(), createdAt: serverTimestamp(), reported: false, hidden: false
-        });
-        setText('');
-        reload();
-        push('Posted');
-      }}>
+      <form className="mt-2 flex gap-2" onSubmit={(e) => e.preventDefault()}>
         <input className="input" placeholder="Ask a question… (max 1000 chars)" value={text} maxLength={1000} onChange={(e) => setText(e.target.value)} aria-label="Comment" />
-        <button className="btn-primary">Post</button>
+        <AsyncButton className="btn-primary" onPress={async () => {
+          if (!db || !user || text.trim().length === 0 || text.length > 1000) return;
+          await addDoc(collection(db, 'comments'), {
+            courseId, lessonId, uid: user.uid, displayName: user.displayName ?? user.email,
+            text: text.trim(), createdAt: serverTimestamp(), reported: false, hidden: false
+          });
+          setText('');
+          reload();
+          push('Posted');
+        }}>Post</AsyncButton>
       </form>
       )}
       <div className="mt-2 space-y-2 text-sm">

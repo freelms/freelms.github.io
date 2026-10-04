@@ -11,6 +11,7 @@ import { SAMPLE_QUIZ_JSON, SAMPLE_COURSE_JSON, QUIZ_AI_PROMPT, COURSE_AI_PROMPT 
 import { ModerationTab } from '../components/Comments';
 import { TagsTab } from '../components/TagsTab';
 import { TagMultiSelect } from '../components/TagMultiSelect';
+import { AsyncButton } from '../components/AsyncButton';
 import { denormalizeTags, syncTagCounters } from '../lib/tags';
 
 type Tab = 'courses' | 'lessons' | 'quizzes' | 'analytics' | 'students' | 'announce' | 'reports' | 'moderation' | 'paths' | 'import' | 'tags';
@@ -171,7 +172,7 @@ function CoursesTab() {
           <textarea className="input" placeholder="Credits JSON: [{creator, channelUrl, videoUrl}]" value={JSON.stringify(form.credits ?? [])} onChange={(e) => { try { set('credits', JSON.parse(e.target.value)); } catch { /* ignore */ } }} />
           <textarea className="input" placeholder="Schedule JSON: [{day, time, topic, link}]" value={JSON.stringify(form.schedule ?? [])} onChange={(e) => { try { set('schedule', JSON.parse(e.target.value)); } catch { /* ignore */ } }} />
           <div className="flex gap-2">
-            <button className="btn-primary" onClick={save}>Save</button>
+            <AsyncButton className="btn-primary" onPress={save}>Save</AsyncButton>
             {editing && <button className="btn-ghost" onClick={() => { setEditing(null); setOrigTags(null); setForm({ ...emptyCourse }); }}>Cancel</button>}
           </div>
         </div>
@@ -280,7 +281,7 @@ function LessonsTab() {
           <input className="input" placeholder="Channel URL" value={channelUrl} onChange={(e) => setChannelUrl(e.target.value)} />
         </div>
         <textarea className="input font-mono text-xs" placeholder='Resources JSON: [{"label":"Slides","url":"https://…","type":"PDF"}]' value={resources} onChange={(e) => setResources(e.target.value)} />
-        <button className="btn-primary" disabled={!cid || !vid} onClick={async () => { await addOne(url, title); setTitle(''); setUrl(''); reload(); }}>Add lesson</button>
+        <AsyncButton className="btn-primary" disabled={!cid || !vid} onPress={async () => { await addOne(url, title); setTitle(''); setUrl(''); reload(); }}>Add lesson</AsyncButton>
         <textarea className="input min-h-[90px]" placeholder="Bulk: one YouTube URL per line (titles auto-fetched)" value={bulk} onChange={(e) => setBulk(e.target.value)} />
         <button className="btn-ghost" disabled={!cid || !bulk.trim()} onClick={async () => {
           const lines = bulk.split('\n').map((s) => s.trim()).filter(Boolean);
@@ -450,13 +451,13 @@ function QuizzesTab() {
         </select>
         {!v.ok && <ul className="text-xs text-red-600">{v.errors.map((e, i) => <li key={i}>{e}</li>)}</ul>}
         {v.ok && <p className="text-xs text-green-700">Valid ✓ {(v as any).quiz?.questions?.length} questions {lessonId && '(quick check)'}</p>}
-        <button className="btn-primary" disabled={!cid || !v.ok} onClick={async () => {
+        <AsyncButton className="btn-primary" disabled={!cid || !v.ok} onPress={async () => {
           if (!db || !v.ok || !(v as any).quiz) return;
           const payload: any = { ...(v as any).quiz, createdAt: serverTimestamp() };
           if (lessonId) payload.lessonId = lessonId; // Firestore rejects explicit undefined
           await addDoc(collection(db, 'courses', cid, 'quizzes'), payload);
           push('Quiz saved'); reload();
-        }}>Save quiz</button>
+        }}>Save quiz</AsyncButton>
       </div>
       <div className="space-y-2">
         {list.map((qz) => (
