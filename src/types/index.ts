@@ -50,6 +50,8 @@ export interface Course {
   totalDuration?: string;
   enrollmentCount?: number;
   completionCount?: number;
+  avgRating?: number;
+  ratingCount?: number;
   tagSlugs?: string[]; // array of tag slugs, max 8
   tags?: CourseTag[]; // denormalized for rendering
   seoTitle?: string;
@@ -92,6 +94,7 @@ export interface Enrollment {
   progressPercent?: number;
   lastLessonId?: string;
   lastTime?: number;
+  positions?: Record<string, number>;
   lastActiveAt?: any;
 }
 
@@ -104,6 +107,9 @@ export interface QuizAttempt {
   passed: boolean;
   answers: number[];
   missedOnly?: boolean;
+  quizTitle?: string;
+  courseTitle?: string;
+  passingScore?: number;
   createdAt?: any;
 }
 
@@ -113,3 +119,11 @@ export interface Report { id: string; courseId?: string; lessonId?: string; reas
 export interface LearnPath { id: string; title: string; description: string; courseIds: string[]; }
 export interface UserProfile { uid: string; name?: string; email?: string; photo?: string; status?: string; createdAt?: any; streakDays?: string[]; badges?: string[]; lastActiveAt?: any; }
 export interface CourseComment { id: string; courseId: string; lessonId: string; uid: string; displayName?: string; text: string; createdAt?: any; reported?: boolean; hidden?: boolean; }
+
+export interface Review {
+  uid: string;
+  displayName?: string;
+  rating: number;
+  text: string;
+  createdAt?: any;
+}

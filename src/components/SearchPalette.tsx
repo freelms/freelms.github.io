@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Course, Lesson } from '../types';
+import { searchRank } from '../lib/search';
 
 export function SearchPalette({ open, close, courses, lessonsByCourse }: {
   open: boolean; close: () => void;
@@ -10,21 +11,26 @@ export function SearchPalette({ open, close, courses, lessonsByCourse }: {
   const [q, setQ] = useState('');
   const nav = useNavigate();
   const results = useMemo(() => {
-    const s = q.trim().toLowerCase();
+    const s = q.trim();
     if (!s) return courses.slice(0, 8).map((c) => ({ label: c.title, sub: (c.tags?.[0]?.name ?? c.topic ?? ''), to: `/course/${c.id}` }));
     const out: { label: string; sub: string; to: string }[] = [];
-    for (const c of courses) {
-      const tagText = (c.tags ?? []).map((t) => t.name).join(' ');
-      if ((c.title + ' ' + (c.topic ?? '') + ' ' + tagText).toLowerCase().includes(s)) {
-        out.push({ label: c.title, sub: (c.tags?.[0]?.name ?? c.topic ?? ''), to: `/course/${c.id}` });
-      }
-      for (const l of lessonsByCourse[c.id] ?? []) {
-        if (l.title.toLowerCase().includes(s)) out.push({ label: l.title, sub: c.title, to: `/learn/${c.id}` });
-        if (out.length > 20) break;
-      }
-      if (out.length > 20) break;
+    const ranked = searchRank(
+      s,
+      courses,
+      (c) => [c.title, c.topic ?? '', ...(c.tags ?? []).map((t) => t.name)].join(' ')
+    );
+    for (const c of ranked.slice(0, 8)) {
+      out.push({ label: c.title, sub: (c.tags?.[0]?.name ?? c.topic ?? ''), to: `/course/${c.id}` });
     }
-    return out;
+    const rankedLessons: { label: string; sub: string; to: string }[] = [];
+    for (const c of courses) {
+      for (const l of lessonsByCourse[c.id] ?? []) {
+        if (searchRank(s, [l], (x) => x.title).length) {
+          rankedLessons.push({ label: l.title, sub: c.title, to: `/learn/${c.id}` });
+        }
+      }
+    }
+    return [...out, ...rankedLessons].slice(0, 20);
   }, [q, courses, lessonsByCourse]);
 
   useEffect(() => {

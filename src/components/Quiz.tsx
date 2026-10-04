@@ -15,7 +15,7 @@ function shuffled<T>(arr: T[]): T[] {
   return a;
 }
 
-export function QuizRunner({ quiz, courseId, onDone }: { quiz: Quiz; courseId: string; onDone: () => void }) {
+export function QuizRunner({ quiz, courseId, courseTitle, onDone }: { quiz: Quiz; courseId: string; courseTitle?: string; onDone: () => void }) {
   const { user } = useAuth();
   const { push } = useToast();
   // shuffle questions + options, remap answerIndex
@@ -59,6 +59,7 @@ export function QuizRunner({ quiz, courseId, onDone }: { quiz: Quiz; courseId: s
     if (user && db) {
       await addDoc(collection(db, 'users', user.uid, 'quizAttempts'), {
         quizId: quiz.id, courseId, score, total, passed: score >= quiz.passingScore,
+        quizTitle: quiz.title, courseTitle: courseTitle ?? courseId, passingScore: quiz.passingScore,
         answers: allAnswers, missedOnly, createdAt: serverTimestamp()
       });
       // aggregate wrong counts + streak
@@ -69,6 +70,8 @@ export function QuizRunner({ quiz, courseId, onDone }: { quiz: Quiz; courseId: s
       await updateStreak(user.uid);
     }
     push(`Quiz finished: ${score}%`);
+    const { trackEvent } = await import('../lib/analytics');
+    trackEvent('quiz_submit', { course_id: courseId, quiz_id: quiz.id, score, passed: score >= quiz.passingScore });
   }
 
   if (finished) {

@@ -34,7 +34,14 @@ export function CourseCard({ c, enrolled, progress, bookmarked, onBookmark }: {
           </button>
         </div>
         <Link to={`/course/${c.id}`} className="mt-2 block text-[15px] font-bold leading-snug tracking-tight transition-colors hover:text-indigo-600 dark:hover:text-indigo-400">{c.title}</Link>
-        <p className="mt-1 text-xs text-slate-500">{c.instructor} · {c.lessonCount ?? 0} lessons</p>
+        <p className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+          <span>{c.instructor} · {c.lessonCount ?? 0} lessons</span>
+          {!!c.ratingCount && (
+            <span className="ml-auto flex items-center gap-1 font-semibold text-amber-500">
+              ★ {Number(c.avgRating ?? 0).toFixed(1)} <span className="font-normal text-slate-400">({c.ratingCount})</span>
+            </span>
+          )}
+        </p>
         {typeof progress === 'number' && (
           <div className="mt-2.5">
             <div className="flex items-center justify-between text-[11px] font-medium">

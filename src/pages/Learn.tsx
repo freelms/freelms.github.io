@@ -119,7 +119,7 @@ export default function Learn() {
     if (now - lastSaveRef.current > 10_000) {
       lastSaveRef.current = now;
       await setDoc(doc(db, 'users', user.uid, 'enrollments', id),
-        { lastLessonId: lesson.id, lastTime: Math.floor(t), lastActiveAt: serverTimestamp() }, { merge: true });
+        { lastLessonId: lesson.id, lastTime: Math.floor(t), [`positions.${lesson.id}`]: Math.floor(t), lastActiveAt: serverTimestamp() }, { merge: true });
     }
     if (dur > 0 && t / dur >= 0.9 && !done.includes(lesson.id)) {
       await toggleComplete(lesson.id, true);
@@ -134,7 +134,7 @@ export default function Learn() {
     if (!db || !user || !id || !lesson) return;
     lastSaveRef.current = Date.now();
     await setDoc(doc(db, 'users', user.uid, 'enrollments', id),
-      { lastLessonId: lesson.id, lastTime: Math.floor(t), lastActiveAt: serverTimestamp() }, { merge: true });
+      { lastLessonId: lesson.id, lastTime: Math.floor(t), [`positions.${lesson.id}`]: Math.floor(t), lastActiveAt: serverTimestamp() }, { merge: true });
   };
 
   const toggleComplete = async (lid: string, force?: boolean) => {
@@ -146,6 +146,10 @@ export default function Learn() {
       { completedLessons: next, progressPercent: pp, lastLessonId: lid, lastActiveAt: serverTimestamp() }, { merge: true });
     setEnroll((e) => (e ? { ...e, completedLessons: next, progressPercent: pp } : e));
     await updateStreak(user.uid);
+    if (!has) {
+      const { trackEvent } = await import('../lib/analytics');
+      trackEvent('lesson_complete', { course_id: id, lesson_id: lid });
+    }
     if (pp === 100) {
       try {
         const { increment, updateDoc } = await import('firebase/firestore');
@@ -209,7 +213,7 @@ export default function Learn() {
             {lesson ? (
               <>
                 <YTPlayer key={lesson.id} videoId={lesson.videoId}
-                  startAt={lesson.id === enroll?.lastLessonId ? (enroll?.lastTime ?? 0) : 0}
+                  startAt={enroll?.positions?.[lesson.id] ?? (lesson.id === enroll?.lastLessonId ? (enroll?.lastTime ?? 0) : 0)}
                   onTime={onTime} onPause={onPauseSave}
                   onEnded={() => step(1)} speed={speed} />
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
@@ -294,7 +298,7 @@ export default function Learn() {
 
       {tab === 'quizzes' && (
         <div className="mt-3">
-          {activeQuiz ? <QuizRunner quiz={activeQuiz} courseId={course.id} onDone={() => { setActiveQuiz(null); }} /> : (
+          {activeQuiz ? <QuizRunner quiz={activeQuiz} courseId={course.id} courseTitle={course.title} onDone={() => { setActiveQuiz(null); }} /> : (
             <div className="grid gap-2">
               {quizzes.map((qz) => (
                 <div key={qz.id} className="card flex items-center gap-3 p-3">

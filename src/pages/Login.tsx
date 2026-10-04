@@ -44,6 +44,7 @@ export default function Login() {
           try {
             await signInWithPopup(auth, new GoogleAuthProvider());
             push('Signed in');
+            import('../lib/analytics').then((m) => m.trackEvent('login', { method: 'google' })).catch(() => {});
             done();
           } catch (e: any) { setErr(friendly(e)); } finally { setBusy(false); }
         }}>Continue with Google</button>
@@ -65,6 +66,7 @@ export default function Login() {
               push('Verification email sent');
             }
             push('Signed in');
+            import('../lib/analytics').then((m) => m.trackEvent('login', { method: 'email' })).catch(() => {});
             done();
           } catch (e: any) { setErr(friendly(e)); } finally { setBusy(false); }
         }}>

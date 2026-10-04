@@ -9,6 +9,7 @@ import { SkeletonCard, EmptyState } from '../components/ui';
 import { ArrowRight, Award, Flame } from 'lucide-react';
 import { TagMultiSelect } from '../components/TagMultiSelect';
 import { fetchMenuTags } from '../lib/tags';
+import { searchRank } from '../lib/search';
 import { resolveThumb } from '../lib/thumb';
 import { streakCount } from '../components/streak';
 
@@ -111,13 +112,17 @@ export default function Home({ lessonsByCourse, setLessons }: HomeProps) {
     return () => { cancelled = true; };
   }, []);
 
-  const visible = courses.filter((c) => {
+  const preFiltered = courses.filter((c) => {
     if (mine && user && !enrollments[c.id]) return false;
     if (savedOnly && !bookmarks.includes(c.id)) return false;
     if (tagParams.length > 0 && !tagParams.every(t => c.tagSlugs?.includes(t))) return false;
-    if (q && !(c.title + ' ' + c.instructor + ' ' + (c.topic ?? '') + ' ' + (c.tagSlugs || []).join(' ')).toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   });
+  const visible = searchRank(
+    q,
+    preFiltered,
+    (c) => [c.title, c.instructor, c.topic ?? '', (c.tagSlugs ?? []).join(' '), ...((c.tags ?? []).map((t) => t.name)), c.description ?? ''].join(' ')
+  );
 
   const toggleBookmark = async (id: string) => {
     if (!db || !user) return;

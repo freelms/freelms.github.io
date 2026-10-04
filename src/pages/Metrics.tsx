@@ -282,6 +282,28 @@ export default function Metrics() {
           </dl>
         </div>
       </div>
+
+      <div className="card p-4">
+        <h3 className="text-sm font-semibold mb-3">Recent quiz attempts</h3>
+        {attempts.length === 0 ? (
+          <p className="text-sm text-slate-500">No attempts yet — take a quiz to start your history.</p>
+        ) : (
+          <ul className="divide-y divide-slate-100 text-sm dark:divide-slate-800">
+            {attempts.slice(0, 8).map((a) => (
+              <li key={a.id} className="flex items-center gap-2 py-2">
+                <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold text-white ${a.passed ? 'bg-emerald-500' : 'bg-slate-400'}`}>
+                  {a.score}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{a.quizTitle ?? a.quizId}</span>
+                  <span className="block truncate text-xs text-slate-500">{a.courseTitle ?? a.courseId}</span>
+                </span>
+                <span className="text-xs text-slate-400">{a.createdAt?.toDate?.()?.toLocaleDateString?.() ?? ''}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

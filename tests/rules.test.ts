@@ -90,4 +90,17 @@ describe('rules', () => {
     await assertSucceeds(updateDoc(doc(admin.firestore(), 'tags/t6'), { name: 'Test6 Updated' }));
     await assertSucceeds(deleteDoc(doc(admin.firestore(), 'tags/t6')));
   });
+
+  it('reviews: public read, enrolled write own, strangers blocked', async () => {
+    const admin = env.authenticatedContext('admin1', { email: 'shariqq.com@gmail.com' });
+    await assertSucceeds(setDoc(doc(admin.firestore(), 'courses/c9'), { title: 'C', status: 'published' }));
+    const alice = env.authenticatedContext('alice');
+    const bob = env.authenticatedContext('bob');
+    await assertSucceeds(setDoc(doc(alice.firestore(), 'users/alice/enrollments/c9'), { completedLessons: [] }));
+    await assertSucceeds(setDoc(doc(alice.firestore(), 'courses/c9/reviews/alice'), { uid: 'alice', rating: 5, text: 'Great' }));
+    await assertFails(setDoc(doc(bob.firestore(), 'courses/c9/reviews/bob'), { uid: 'bob', rating: 4, text: 'Ok' }));
+    await assertFails(setDoc(doc(alice.firestore(), 'courses/c9/reviews/alice'), { uid: 'alice', rating: 9, text: 'Bad rating' }));
+    const anon = env.unauthenticatedContext();
+    await assertSucceeds(getDoc(doc(anon.firestore(), 'courses/c9/reviews/alice')));
+  });
 });

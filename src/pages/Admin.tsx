@@ -235,9 +235,25 @@ function CoursesTab() {
               reload();
             }}>Duplicate</button>
             <button className="btn-ghost !py-1 text-xs !text-red-600" onClick={async () => {
-              if (!db || !confirm('Delete course?')) return;
+              if (!db || !confirm('Delete course AND its lessons + quizzes? (Student enrollments are kept.)')) return;
+              const ls = await getDocs(collection(db, 'courses', c.id, 'lessons'));
+              const qs = await getDocs(collection(db, 'courses', c.id, 'quizzes'));
+              for (let i = 0; i < ls.docs.length; i += 400) {
+                const { writeBatch } = await import('firebase/firestore');
+                const b = writeBatch(db);
+                ls.docs.slice(i, i + 400).forEach((d) => b.delete(d.ref));
+                await b.commit();
+              }
+              for (let i = 0; i < qs.docs.length; i += 400) {
+                const { writeBatch } = await import('firebase/firestore');
+                const b = writeBatch(db);
+                qs.docs.slice(i, i + 400).forEach((d) => b.delete(d.ref));
+                await b.commit();
+              }
               await syncTagCounters(db, { status: c.status, tagSlugs: c.tagSlugs ?? [] }, null);
-              await deleteDoc(doc(db, 'courses', c.id)); reload();
+              try { await deleteDoc(doc(db, 'stats', c.id)); } catch { /* ignore */ }
+              await deleteDoc(doc(db, 'courses', c.id));
+              reload(); push('Course and its lessons + quizzes deleted');
             }}>Delete</button>
           </div>
         ))}
@@ -359,6 +375,22 @@ function LessonsTab() {
           }
           reload(); push('Video check done');
         }}>Check videos (oEmbed)</button>
+        <button className="btn-ghost" onClick={async () => {
+          if (!db || !confirm('Recount lessons for ALL courses and fix stored lessonCount values?')) return;
+          const cs = await getDocs(collection(db, 'courses'));
+          const batch: any[] = [];
+          let fixed = 0;
+          for (const c of cs.docs) {
+            const ls = await getDocs(collection(db, 'courses', c.id, 'lessons'));
+            if ((c.data() as any).lessonCount !== ls.size) {
+              batch.push(updateDoc(doc(db, 'courses', c.id), { lessonCount: ls.size }));
+              fixed++;
+            }
+          }
+          await Promise.all(batch);
+          push(fixed ? `Fixed ${fixed} course(s)` : 'All counts already correct');
+          reload();
+        }}>Recount all lesson totals</button>
       </div>
       <div className="space-y-2">
         {lessons.map((l, i) => (

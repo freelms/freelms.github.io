@@ -23,3 +23,10 @@ export function initAnalytics() {
   s.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
   document.head.appendChild(s);
 }
+
+/** Fire a GA4 custom event (funnel: enroll → lesson → quiz). No-op without ID. */
+export function trackEvent(name: string, params?: Record<string, unknown>) {
+  try {
+    window.gtag?.('event', name, params ?? {});
+  } catch { /* ignore */ }
+}

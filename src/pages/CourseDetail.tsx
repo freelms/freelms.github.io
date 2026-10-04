@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import type { Course, Lesson } from '../types';
 import { ReportForm } from '../components/ReportForm';
+import { Reviews } from '../components/Reviews';
 import { AsyncButton } from '../components/AsyncButton';
 import { resolveThumb } from '../lib/thumb';
 import { sortLessons } from '../lib/lessons';
@@ -91,6 +92,8 @@ export default function CourseDetail() {
     } catch { /* ignore */ }
     setEnrolled(true);
     push('Enrolled!');
+    const { trackEvent } = await import('../lib/analytics');
+    trackEvent('enroll', { course_id: id, course_title: course?.title ?? id });
     nav(`/learn/${id}`);
   };
 
@@ -226,6 +229,8 @@ export default function CourseDetail() {
         </ul>
         <div className="mt-3 border-t border-slate-100 pt-3 dark:border-slate-800"><ReportForm courseId={course.id} /></div>
       </div>
+
+      <Reviews courseId={course.id} />
     </div>
   );
 }
