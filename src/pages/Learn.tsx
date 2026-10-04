@@ -13,6 +13,7 @@ import { googleCalendarUrl, downloadICS } from '../lib/ics';
 import { updateStreak } from '../components/streak';
 import { LessonComments } from '../components/Comments';
 import { AnnouncementBanner } from '../components/Banner';
+import { sortLessons } from '../lib/lessons';
 
 type Tab = 'overview' | 'videos' | 'timetable' | 'quizzes' | 'notes';
 
@@ -52,8 +53,9 @@ export default function Learn() {
         document.title = `Learn: ${cd.title} | FreeLMS`;
       }
       const ls = await getDocs(collection(db, 'courses', id, 'lessons'));
-      const arr = (ls.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Lesson[])
-        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      const arr = sortLessons(
+        ls.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Lesson[]
+      );
       setLessons(arr);
       const qs = await getDocs(collection(db, 'courses', id, 'quizzes'));
       setQuizzes(qs.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Quiz[]);

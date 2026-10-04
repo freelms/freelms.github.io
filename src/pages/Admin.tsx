@@ -228,7 +228,7 @@ function LessonsTab() {
   };
   useEffect(() => { reload(); }, [cid]);
 
-  const addOne = async (yt: string, t: string, num?: number) => {
+  const addOne = async (yt: string, t: string, num?: number, orderOverride?: number) => {
     const videoId = extractVideoId(yt);
     if (!videoId || !db || !cid) { push(`Bad URL: ${yt}`); return; }
     // Fetch the real video title (and creator) via YouTube oEmbed — no API key needed.
@@ -256,14 +256,14 @@ function LessonsTab() {
     let res: any[] = [];
     try { res = JSON.parse(resources || '[]'); } catch { res = []; }
     await addDoc(collection(db, 'courses', cid, 'lessons'), {
-      title, videoId, order: lessons.length,
+      title, videoId, order: orderOverride ?? lessons.length,
       videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
       creator: creatorName || '', channelUrl: channelUrl || '', resources: res,
       broken: !oembedOk,
       createdAt: serverTimestamp()
     });
     // denormalized counter (E16)
-    try { await updateDoc(doc(db, 'courses', cid), { lessonCount: lessons.length + 1, updatedAt: serverTimestamp() }); } catch { /* ignore */ }
+    try { await updateDoc(doc(db, 'courses', cid), { lessonCount: (orderOverride ?? lessons.length) + 1, updatedAt: serverTimestamp() }); } catch { /* ignore */ }
   };
 
   return (
@@ -285,7 +285,8 @@ function LessonsTab() {
         <button className="btn-ghost" disabled={!cid || !bulk.trim()} onClick={async () => {
           const lines = bulk.split('\n').map((s) => s.trim()).filter(Boolean);
           push(`Adding ${lines.length} videos, fetching titles…`);
-          for (let i = 0; i < lines.length; i++) await addOne(lines[i], lines[i], i + 1);
+          const base = lessons.length;
+          for (let i = 0; i < lines.length; i++) await addOne(lines[i], lines[i], i + 1, base + i);
           setBulk(''); reload(); push('Bulk added with video titles');
         }}>Add all URLs</button>
         <button className="btn-ghost" disabled={!cid} onClick={async () => {

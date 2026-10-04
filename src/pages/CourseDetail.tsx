@@ -7,6 +7,7 @@ import { useToast } from '../hooks/useToast';
 import type { Course, Lesson } from '../types';
 import { ReportForm } from '../components/ReportForm';
 import { resolveThumb } from '../lib/thumb';
+import { sortLessons } from '../lib/lessons';
 
 const shortTitle = (c: { seoTitle?: string; title: string }) =>
   c.seoTitle?.trim() || (c.title.length <= 55 ? c.title : c.title.slice(0, 55).replace(/\s+\S*$/, ''));
@@ -62,7 +63,7 @@ export default function CourseDetail() {
       if (user) {
         try {
           const ls = await getDocs(collection(db, 'courses', id, 'lessons'));
-          setLessons(ls.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Lesson[]);
+          setLessons(sortLessons(ls.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Lesson[]));
         } catch { setLessons([]); }
         const en = await getDoc(doc(db, 'users', user.uid, 'enrollments', id));
         setEnrolled(en.exists());
