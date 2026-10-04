@@ -50,7 +50,7 @@ export default function Learn() {
       if (c.exists()) {
         const cd = { id: c.id, ...(c.data() as any) } as Course;
         setCourse(cd);
-        document.title = `Learn: ${cd.title} | FreeLMS`;
+        document.title = `Learn: ${cd.title} | FreeLMS GitHub`;
       }
       const ls = await getDocs(collection(db, 'courses', id, 'lessons'));
       const arr = sortLessons(

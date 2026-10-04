@@ -206,7 +206,7 @@ export function MobileDrawer({ open, close }: { open: boolean; close: () => void
 export function Footer() {
   return (
     <footer className="no-print mx-auto max-w-6xl px-3 pb-10 pt-8 text-center text-xs text-slate-500">
-      <p>Free for everyone. No ads. Video credits belong to their original creators.</p>
+      <p><strong>FreeLMS GitHub</strong> — free for everyone. No ads. Video credits belong to their original creators.</p>
       <FooterCategories />
       <p className="mt-1 flex flex-wrap justify-center gap-3">
         <Link to="/about" className="underline">About</Link>

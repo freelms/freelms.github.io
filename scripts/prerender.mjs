@@ -296,17 +296,17 @@ function coursePage(c, all, site, catNav) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>${esc(title)} | FreeLMS</title>
+<title>${esc(title)} | FreeLMS GitHub</title>
 <meta name="description" content="${esc(meta)}" />
 <link rel="canonical" href="${esc(url)}" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="FreeLMS" />
-<meta property="og:title" content="${esc(title)} | FreeLMS" />
+<meta property="og:title" content="${esc(title)} | FreeLMS GitHub" />
 <meta property="og:description" content="${esc(meta)}" />
 <meta property="og:url" content="${esc(url)}" />
 ${img ? `<meta property="og:image" content="${esc(img)}" />` : ''}
 <meta name="twitter:card" content="${img ? 'summary_large_image' : 'summary'}" />
-<meta name="twitter:title" content="${esc(title)} | FreeLMS" />
+<meta name="twitter:title" content="${esc(title)} | FreeLMS GitHub" />
 <meta name="twitter:description" content="${esc(meta)}" />
 ${img ? `<meta name="twitter:image" content="${esc(img)}" />` : ''}
 <script type="application/ld+json">${JSON.stringify(ldCourse)}</script>
@@ -379,17 +379,17 @@ function tagPage(t, tCourses, related, site, catNav) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>${esc(title)} | FreeLMS</title>
+<title>${esc(title)} | FreeLMS GitHub</title>
 <meta name="description" content="${esc(desc.slice(0, 160))}" />
 <link rel="canonical" href="${esc(url)}" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="FreeLMS" />
-<meta property="og:title" content="${esc(title)} | FreeLMS" />
+<meta property="og:title" content="${esc(title)} | FreeLMS GitHub" />
 <meta property="og:description" content="${esc(desc.slice(0, 200))}" />
 <meta property="og:url" content="${esc(url)}" />
 ${img ? `<meta property="og:image" content="${esc(img)}" />` : ''}
 <meta name="twitter:card" content="${img ? 'summary_large_image' : 'summary'}" />
-<meta name="twitter:title" content="${esc(title)} | FreeLMS" />
+<meta name="twitter:title" content="${esc(title)} | FreeLMS GitHub" />
 <meta name="twitter:description" content="${esc(desc.slice(0, 200))}" />
 ${img ? `<meta name="twitter:image" content="${esc(img)}" />` : ''}
 <script type="application/ld+json">${JSON.stringify(ldCollection)}</script>
@@ -535,12 +535,12 @@ async function main() {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Content Disclaimer — How FreeLMS Uses YouTube Videos | FreeLMS</title>
+<title>Content Disclaimer — How FreeLMS Uses YouTube Videos | FreeLMS GitHub</title>
 <meta name="description" content="FreeLMS never re-uploads videos. Lessons play originals via YouTube embeds, giving creators views while students learn. Read the full disclaimer." />
 <link rel="canonical" href="${esc(disUrl)}" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="FreeLMS" />
-<meta property="og:title" content="Content Disclaimer — How FreeLMS Uses YouTube Videos | FreeLMS" />
+<meta property="og:title" content="Content Disclaimer — How FreeLMS Uses YouTube Videos | FreeLMS GitHub" />
 <meta property="og:description" content="We embed originals, never re-upload. Creators keep views and credit; students get structured courses." />
 <meta property="og:url" content="${esc(disUrl)}" />
 <style>body{font-family:system-ui,sans-serif;max-width:720px;margin:0 auto;padding:24px;color:#1e293b}h1{font-size:28px}a{color:#4f46e5}.cta{display:inline-block;background:#4f46e5;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600}</style>

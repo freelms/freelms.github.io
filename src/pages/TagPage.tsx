@@ -74,7 +74,7 @@ export default function TagPage() {
   }, [slug]);
 
   useEffect(() => {
-    document.title = tag ? `${tag.seoTitle || tag.name} | FreeLMS` : 'Category | FreeLMS';
+    document.title = tag ? `${tag.seoTitle || tag.name} | FreeLMS GitHub` : 'Category | FreeLMS GitHub';
   }, [tag]);
 
   const related = useMemo(() => {

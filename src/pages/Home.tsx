@@ -36,7 +36,7 @@ export default function Home({ lessonsByCourse, setLessons }: HomeProps) {
   const [passedCount, setPassedCount] = useState(0);
   const [streak, setStreak] = useState(0);
   useEffect(() => { setShown(12); }, [q, mine, savedOnly, tagParams]);
-  useEffect(() => { document.title = 'FreeLMS — Free Online Courses & Video Training Platform'; }, []);
+  useEffect(() => { document.title = 'FreeLMS GitHub — Free Online Courses & Video Training Platform'; }, []);
 
   useEffect(() => {
     (async () => {
@@ -152,14 +152,15 @@ export default function Home({ lessonsByCourse, setLessons }: HomeProps) {
         </div>
         <div className="relative p-6 sm:p-10">
           <p className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-100">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Free forever · No ads
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> FreeLMS GitHub · Free forever · No ads
           </p>
           <h1 className="mt-3 max-w-2xl text-3xl font-extrabold leading-[1.08] tracking-tight sm:text-[2.75rem]">
-            Free online courses for everyone. <span className="bg-gradient-to-r from-indigo-300 to-violet-300 bg-clip-text text-transparent">Learn anything, at your pace.</span>
+            FreeLMS GitHub: free online courses for everyone. <span className="bg-gradient-to-r from-indigo-300 to-violet-300 bg-clip-text text-transparent">Learn anything, at your pace.</span>
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-300">
-            Curated video training with lesson-by-lesson progress tracking, quizzes with instant
-            feedback and personal notes — from web development and freelancing to everyday digital skills.
+            FreeLMS GitHub is a free online courses platform with curated video training, lesson-by-lesson
+            progress tracking, quizzes with instant feedback and personal notes. No fees. No ads. Just learning — from web development and freelancing to
+            everyday digital skills.
           </p>
           <div className="mt-5 flex flex-wrap gap-2.5">
             <a href="#/paths" className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-950/30 transition hover:-translate-y-0.5 hover:shadow-xl">Browse learning paths</a>
@@ -172,26 +173,6 @@ export default function Home({ lessonsByCourse, setLessons }: HomeProps) {
           </dl>
         </div>
       </section>
-      {user && enrolledCourses.length > 0 && (
-        <section aria-label="Continue learning" className="mt-8">
-          <div className="flex items-end justify-between mb-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-400">Pick up where you left off</p>
-              <h2 className="text-lg font-bold tracking-tight">Continue learning</h2>
-            </div>
-            <Link to="/my-courses" className="text-sm font-medium text-indigo-600 hover:underline flex items-center gap-1">
-              View all <ArrowRight size={14} />
-            </Link>
-          </div>
-          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {enrolledCourses.slice(0, 3).map((c) => {
-              const total = (lessonsByCourse[c.id]?.length || c.lessonCount || 1);
-              const done = (enrollments[c.id]?.completedLessons?.length ?? 0);
-              return <CourseCard key={c.id} c={c} enrolled progress={Math.round((done / Math.max(1, total)) * 100)} bookmarked={bookmarks.includes(c.id)} onBookmark={() => toggleBookmark(c.id)} />;
-            })}
-          </div>
-        </section>
-      )}
       <div className={user ? 'mt-6 grid items-start gap-4 lg:grid-cols-[292px_minmax(0,1fr)]' : 'mt-6'}>
         {user && (
           <aside className="space-y-3 lg:sticky lg:top-20" aria-label="Your learning">
@@ -283,14 +264,14 @@ export default function Home({ lessonsByCourse, setLessons }: HomeProps) {
       </div>
 
       {loading ? (
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {[0, 1, 2, 3, 4, 5].map((i) => <SkeletonCard key={i} />)}
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {[0, 1, 2, 3].map((i) => <SkeletonCard key={i} />)}
         </div>
       ) : visible.length === 0 ? (
         <div className="mt-6"><EmptyState title="No courses found" hint="Try a different search or topic." /></div>
       ) : (
         <>
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {visible.slice(0, shown).map((c) => {
             const total = (lessonsByCourse[c.id]?.length || c.lessonCount || 1);
             const done = (enrollments[c.id]?.completedLessons?.length ?? 0);
@@ -313,7 +294,7 @@ export default function Home({ lessonsByCourse, setLessons }: HomeProps) {
 }
 
 const FAQS = [
-  { q: 'Is FreeLMS really free?', a: 'Yes. Every course on FreeLMS is 100% free, forever. No fees, no ads, no paywalled lessons.' },
+  { q: 'Is FreeLMS really free?', a: 'Yes. Every course on FreeLMS GitHub is 100% free, forever. No fees, no ads, no paywalled lessons.' },
   { q: 'How do courses work?', a: 'Each course is a curated series of video lessons with a weekly timetable, quizzes with instant feedback, personal notes and a progress tracker. Enroll once, learn at your own pace.' },
   { q: 'How is my progress saved?', a: 'Enroll free with your account and every lesson you complete, quiz attempt and note is saved automatically, so you can continue learning on any device.' },
   { q: 'Who creates the videos?', a: 'Lessons embed videos from independent creators using the official YouTube player. Every creator is credited with channel and original-video links — we never re-upload their work.' }
@@ -338,7 +319,7 @@ function SeoFaq() {
     <section className="card mt-6 p-4 sm:p-6" aria-label="Frequently asked questions">
       <h2 className="text-base font-bold">Free online courses — questions, answered</h2>
       <p className="mt-1 text-sm text-slate-500">
-        New to online learning? FreeLMS makes it simple: pick a free course below, enroll in one click,
+        New to online learning? FreeLMS GitHub makes it simple: pick a free course below, enroll in one click,
         and your progress, quiz scores and notes are saved automatically.
       </p>
       <div className="mt-3 space-y-2">

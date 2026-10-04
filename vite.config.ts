@@ -10,7 +10,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'FreeLMS — Free Training Platform',
+        name: 'FreeLMS GitHub — Free Training Platform',
         short_name: 'FreeLMS',
         description: 'Free for everyone. No ads.',
         theme_color: '#4f46e5',

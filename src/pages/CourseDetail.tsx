@@ -31,7 +31,7 @@ export default function CourseDetail() {
       if (snap.exists()) {
         const c = { id: snap.id, ...(snap.data() as any) } as Course;
         setCourse(c);
-        document.title = `${shortTitle(c)} | FreeLMS`;
+        document.title = `${shortTitle(c)} | FreeLMS GitHub`;
         const md = document.querySelector('meta[name="description"]');
         if (md) md.setAttribute('content', `Learn ${c.title} free on FreeLMS. ${c.description.slice(0, 140)}`);
         // canonical points at the prerendered static snapshot (SEO); + Course JSON-LD
