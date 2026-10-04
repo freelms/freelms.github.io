@@ -25,13 +25,19 @@ service cloud.firestore {
     }
 
     match /courses/{courseId} {
-      // published courses readable by anyone (public catalog + SEO); drafts/archived need login+enrollment or admin
-      allow read: if isPublishedCourse() || isAdmin() || (notDisabled() && isEnrolled(courseId));
+      // published courses readable by anyone (public catalog + SEO); drafts/archived need login+enrollment or admin.
+      // NOTE: get/list are split on purpose. List queries MUST constrain
+      // where('status','==','published') (as the catalog does) — Firestore
+      // rejects unconstrained lists when rules branch on document data.
+      // Only non-published docs cost the single admins-collection check.
+      // (Disabled-account enforcement lives on writes, comments/reports, and app-side sign-out.)
+      allow get: if isPublishedCourse() || isAdmin() || (notDisabled() && isEnrolled(courseId));
+      allow list: if isPublishedCourse() || isAdmin();
       allow create, update, delete: if isAdmin();
 
       match /lessons/{lessonId} {
-        // never public — the player page requires enrollment
-        allow read: if isAdmin() || (notDisabled() && isEnrolled(courseId));
+        // never public — the player page requires enrollment (same zero-get rule shape)
+        allow read: if isAdmin() || isEnrolled(courseId);
         allow write: if isAdmin();
       }
       match /quizzes/{quizId} {
@@ -80,7 +86,9 @@ service cloud.firestore {
     }
 
     match /comments/{commentId} {
-      allow read: if notDisabled();
+      // list must stay get()-free (same per-request read cap as courses)
+      allow get: if notDisabled();
+      allow list: if signedIn();
       allow create: if canComment() && request.resource.data.uid == request.auth.uid;
       allow update, delete: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
     }

@@ -49,7 +49,11 @@ export default function Home({ lessonsByCourse, setLessons }: HomeProps) {
           if (Date.now() - at < TTL) { setCourses(data); setLoading(false); }
         }
       } catch { /* ignore */ }
-      const snap = await getDocs(collection(db, 'courses'));
+      const snap = await getDocs(
+        // Constrain to published server-side: Firestore rejects unconstrained
+        // lists when rules branch on document data — this keeps it allowed.
+        query(collection(db, 'courses'), where('status', '==', 'published'))
+      );
       const all = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Course[];
       const pub = all.filter((c) => c.status === 'published' || (c.published && c.status !== 'archived' && c.status !== 'draft') || (!c.status && c.published !== false));
       // published-only filter when status field present
