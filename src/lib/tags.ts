@@ -21,6 +21,7 @@ export async function recalcTagCounts(db: any): Promise<Record<string, number>> 
     }
   }
   if (n) await batch.commit();
+  invalidateMenuCache();
   return counts;
 }
 
@@ -44,6 +45,7 @@ export async function syncTagCounters(
     batch.set(doc(db, 'tags', slug), { courseCount: increment(d) }, { merge: true });
   }
   await batch.commit();
+  invalidateMenuCache();
 }
 
 /** Remove a tag slug from all courses carrying it (batched, chunked). */
@@ -101,6 +103,15 @@ export function denormalizeTags(slugs: string[], cache: Tag[]) {
 
 const MENU_CACHE_KEY = 'lh-tag-menu';
 const MENU_TTL = 5 * 60 * 1000;
+
+/** Drop cached menus everywhere so nav/footer pick up fresh counts. */
+export function invalidateMenuCache() {
+  menuMem.at = 0;
+  menuMem.data = [];
+  try {
+    localStorage.removeItem(MENU_CACHE_KEY);
+  } catch { /* ignore */ }
+}
 
 /**
  * Menu tags, resilient by design:

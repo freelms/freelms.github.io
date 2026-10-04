@@ -4,7 +4,7 @@ import { db } from '../lib/firebase';
 import { useToast } from '../hooks/useToast';
 import type { Tag } from '../types';
 import { slugify } from '../lib/slug';
-import { mergeTags, recalcTagCounts, removeTagFromCourses } from '../lib/tags';
+import { invalidateMenuCache, mergeTags, recalcTagCounts, removeTagFromCourses } from '../lib/tags';
 
 const EMPTY: Partial<Tag> = {
   name: '', description: '', color: '#4f46e5', icon: 'book-open',
@@ -35,6 +35,7 @@ export function TagsTab() {
     const s = await getDocs(collection(db, 'tags'));
     const list = s.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Tag[];
     setTags(list);
+    invalidateMenuCache(); // nav/footer pick up changes on next load
     // live usage counts (published courses per slug)
     try {
       const cs = await getDocs(query(collection(db, 'courses'), where('status', '==', 'published')));
