@@ -14,7 +14,10 @@ export function LessonComments({ courseId, lessonId }: { courseId: string; lesso
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [muted, setMuted] = useState(false);
+  const [replyId, setReplyId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
   const perPage = 20;
+  const byId = new Map(items.map((c) => [c.id, c]));
 
   useEffect(() => {
     if (!db || !user) return;
@@ -42,6 +45,7 @@ export function LessonComments({ courseId, lessonId }: { courseId: string; lesso
           if (!db || !user || text.trim().length === 0 || text.length > 1000) return;
           await addDoc(collection(db, 'comments'), {
             courseId, lessonId, uid: user.uid, displayName: user.displayName ?? user.email,
+            ...(isAdmin ? { authorRole: 'admin' } : {}),
             text: text.trim(), createdAt: serverTimestamp(), reported: false, hidden: false
           });
           setText('');
@@ -52,8 +56,17 @@ export function LessonComments({ courseId, lessonId }: { courseId: string; lesso
       )}
       <div className="mt-2 space-y-2 text-sm">
         {items.map((c) => (
-          <div key={c.id} className="rounded-lg border border-slate-200 p-2 dark:border-slate-800">
-            <p className="text-xs text-slate-500">{c.displayName} {c.reported && isAdmin && <span className="chip">reported</span>}</p>
+          <div key={c.id} className={`rounded-lg border p-2 ${c.authorRole === 'admin' ? 'border-indigo-300 bg-indigo-50/50 dark:border-indigo-800 dark:bg-indigo-950/30' : 'border-slate-200 dark:border-slate-800'}`}>
+            <p className="flex items-center gap-1.5 text-xs text-slate-500">
+              {c.displayName}
+              {c.authorRole === 'admin' && <span className="rounded-full bg-indigo-600 px-1.5 py-px text-[10px] font-bold text-white">Instructor</span>}
+              {c.reported && isAdmin && <span className="chip">reported</span>}
+            </p>
+            {c.replyTo && byId.get(c.replyTo) && (
+              <blockquote className="mt-1 border-l-2 border-slate-300 pl-2 text-xs italic text-slate-500">
+                {String(byId.get(c.replyTo).text).slice(0, 140)}
+              </blockquote>
+            )}
             {editingId === c.id ? (
               <form className="mt-1 flex gap-2" onSubmit={async (e) => {
                 e.preventDefault();
@@ -77,7 +90,34 @@ export function LessonComments({ courseId, lessonId }: { courseId: string; lesso
               )}
               <button className="underline" onClick={async () => { if (db) { await updateDoc(doc(db, 'comments', c.id), { reported: true }); push('Reported'); } }}>Report</button>
               {isAdmin && <button className="underline" onClick={async () => { if (db) { await updateDoc(doc(db, 'comments', c.id), { hidden: !c.hidden }); reload(); } }}>{c.hidden ? 'Unhide' : 'Hide'}</button>}
+              {(isAdmin || c.uid !== user?.uid) && (
+                <button className="font-medium text-indigo-600" onClick={() => { setReplyId(replyId === c.id ? null : c.id); setReplyText(''); }}>
+                  {replyId === c.id ? 'Cancel reply' : 'Reply'}
+                </button>
+              )}
             </div>
+            {replyId === c.id && (
+              <div className="mt-2 flex gap-2">
+                <input
+                  className="input"
+                  placeholder={isAdmin ? 'Reply as instructor…' : 'Write a reply…'}
+                  value={replyText}
+                  maxLength={1000}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  aria-label="Reply text"
+                />
+                <AsyncButton className="btn-primary shrink-0" onPress={async () => {
+                  if (!db || !user || !replyText.trim()) return;
+                  await addDoc(collection(db, 'comments'), {
+                    courseId, lessonId, uid: user.uid, displayName: user.displayName ?? user.email,
+                    ...(isAdmin ? { authorRole: 'admin' } : {}),
+                    replyTo: c.id, text: replyText.trim(),
+                    createdAt: serverTimestamp(), reported: false, hidden: false
+                  });
+                  setReplyId(null); setReplyText(''); reload(); push('Reply posted');
+                }}>Reply</AsyncButton>
+              </div>
+            )}
           </div>
         ))}
         {items.length === 0 && <p className="text-slate-500">No questions yet. Be the first!</p>}
@@ -89,6 +129,10 @@ export function LessonComments({ courseId, lessonId }: { courseId: string; lesso
 
 export function ModerationTab() {
   const [items, setItems] = useState<any[]>([]);
+  const [replyId, setReplyId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const { push } = useToast();
+  const { user } = useAuth();
   useEffect(() => {
     if (!db) return;
     (async () => {
@@ -102,12 +146,37 @@ export function ModerationTab() {
         <div key={c.id} className="card p-3">
           <p className="font-medium">{c.displayName} · {c.courseId}/{c.lessonId}</p>
           <p>{c.text}</p>
-          <div className="mt-1 flex gap-2 text-xs">
+          <div className="mt-1 flex flex-wrap gap-2 text-xs">
+            <button className="font-medium text-indigo-600 underline" onClick={() => { setReplyId(replyId === c.id ? null : c.id); setReplyText(''); }}>
+              {replyId === c.id ? 'Cancel reply' : 'Reply as instructor'}
+            </button>
             <button className="underline" onClick={async () => { if (db) { await updateDoc(doc(db, 'comments', c.id), { hidden: true, reported: false }); location.reload(); } }}>Hide</button>
             <button className="underline" onClick={async () => { if (db) { await deleteDoc(doc(db, 'comments', c.id)); location.reload(); } }}>Delete</button>
             <button className="underline" onClick={async () => { if (db) { await updateDoc(doc(db, 'comments', c.id), { reported: false }); location.reload(); } }}>Dismiss</button>
             <button className="underline text-red-600" onClick={async () => { if (db && confirm(`Ban ${c.displayName} from commenting?`)) { await updateDoc(doc(db, 'users', c.uid), { commenting: 'off' }); } }}>Ban user</button>
           </div>
+          {replyId === c.id && (
+            <div className="mt-2 flex gap-2">
+              <input
+                className="input"
+                placeholder="Reply as instructor…"
+                value={replyText}
+                maxLength={1000}
+                onChange={(e) => setReplyText(e.target.value)}
+                aria-label="Reply text"
+              />
+              <AsyncButton className="btn-primary shrink-0 !py-1 text-xs" onPress={async () => {
+                if (!db || !user || !replyText.trim()) return;
+                await addDoc(collection(db, 'comments'), {
+                  courseId: c.courseId, lessonId: c.lessonId, uid: user.uid,
+                  displayName: user.displayName ?? user.email, authorRole: 'admin',
+                  replyTo: c.id, text: replyText.trim(),
+                  createdAt: serverTimestamp(), reported: false, hidden: false
+                });
+                setReplyId(null); setReplyText(''); push('Reply posted'); location.reload();
+              }}>Reply</AsyncButton>
+            </div>
+          )}
         </div>
       ))}
       {items.length === 0 && <p className="text-slate-500">No reported posts.</p>}

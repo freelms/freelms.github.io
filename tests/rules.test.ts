@@ -123,4 +123,12 @@ describe('rules', () => {
     await assertSucceeds(setDoc(doc(admin.firestore(), 'config/deploy'), { githubToken: 'x' }));
     await assertSucceeds(getDoc(doc(admin.firestore(), 'config/deploy')));
   });
+
+  it('comments: only admins may set authorRole', async () => {
+    const alice = env.authenticatedContext('alice');
+    const admin = env.authenticatedContext('admin1', { email: 'shariqq.com@gmail.com' });
+    await assertSucceeds(setDoc(doc(alice.firestore(), 'comments/c1'), { uid: 'alice', courseId: 'c1', lessonId: 'l1', text: 'hi' }));
+    await assertFails(setDoc(doc(alice.firestore(), 'comments/c2'), { uid: 'alice', courseId: 'c1', lessonId: 'l1', text: 'hi', authorRole: 'admin' }));
+    await assertSucceeds(setDoc(doc(admin.firestore(), 'comments/c3'), { uid: 'admin1', courseId: 'c1', lessonId: 'l1', text: 'answer', authorRole: 'admin' }));
+  });
 });

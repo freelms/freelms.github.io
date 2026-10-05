@@ -102,7 +102,8 @@ service cloud.firestore {
       // list must stay get()-free (same per-request read cap as courses)
       allow get: if notDisabled();
       allow list: if signedIn();
-      allow create: if canComment() && request.resource.data.uid == request.auth.uid;
+      allow create: if canComment() && request.resource.data.uid == request.auth.uid
+        && (!('authorRole' in request.resource.data) || isAdmin());
       allow update, delete: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
     }
 
