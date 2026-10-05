@@ -32,11 +32,14 @@ export default function Home({ lessonsByCourse, setLessons }: HomeProps) {
   const mine = params.get('mine') === '1';
   const savedOnly = params.get('saved') === '1';
   const tagParams = params.getAll('tag');
+  const tagKey = tagParams.join(',');
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagsLoading, setTagsLoading] = useState(true);
   const [passedCount, setPassedCount] = useState(0);
   const [streak, setStreak] = useState(0);
-  useEffect(() => { setShown(12); }, [q, mine, savedOnly, tagParams]);
+  // NOTE: depend on the stable tagKey string — tagParams is a fresh array every
+  // render, which used to reset pagination on every click (breaking Load more).
+  useEffect(() => { setShown(12); }, [q, mine, savedOnly, tagKey]);
   useEffect(() => { document.title = 'FreeLMS GitHub — Free Online Courses & Video Training Platform'; }, []);
 
   useEffect(() => {
