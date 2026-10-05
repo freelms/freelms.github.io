@@ -11,8 +11,8 @@ export function CourseCard({ c, enrolled, progress, bookmarked, onBookmark }: {
     <div className="card group overflow-hidden transition duration-300 hover:-translate-y-1 hover:shadow-xl">
       <Link to={`/course/${c.id}`} aria-label={c.title} className="relative block overflow-hidden">
         {c.thumbnail
-          ? <img src={resolveThumb(c.thumbnail)} alt="" className="h-[166px] w-full object-cover transition duration-500 group-hover:scale-[1.04]" loading="lazy" />
-          : <div className="grid h-[166px] w-full place-items-center bg-gradient-to-br from-indigo-600 to-violet-700 text-2xl font-extrabold text-white">FreeLMS</div>}
+          ? <img src={resolveThumb(c.thumbnail)} alt="" className="h-[183px] w-full object-cover transition duration-500 group-hover:scale-[1.04]" loading="lazy" />
+          : <div className="grid h-[183px] w-full place-items-center bg-gradient-to-br from-indigo-600 to-violet-700 text-2xl font-extrabold text-white">FreeLMS</div>}
         <span className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" aria-hidden />
         <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-semibold text-white opacity-0 backdrop-blur transition group-hover:opacity-100">
           <PlayCircle size={13} /> {enrolled ? 'Continue' : 'Preview'}
