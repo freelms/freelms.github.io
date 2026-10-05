@@ -118,11 +118,20 @@ export default function Home({ lessonsByCourse, setLessons }: HomeProps) {
     if (tagParams.length > 0 && !tagParams.every(t => c.tagSlugs?.includes(t))) return false;
     return true;
   });
-  const visible = searchRank(
+  const ranked = searchRank(
     q,
     preFiltered,
     (c) => [c.title, c.instructor, c.topic ?? '', (c.tagSlugs ?? []).join(' '), ...((c.tags ?? []).map((t) => t.name)), c.description ?? ''].join(' ')
   );
+  // Latest first (createdAt desc; courses without a timestamp sink to the end).
+  // When searching, keep relevance ranking instead.
+  const visible = q.trim()
+    ? ranked
+    : [...ranked].sort((a, b) => {
+        const ta = a.createdAt?.toMillis?.() ?? 0;
+        const tb = b.createdAt?.toMillis?.() ?? 0;
+        return tb - ta;
+      });
 
   const toggleBookmark = async (id: string) => {
     if (!db || !user) return;
