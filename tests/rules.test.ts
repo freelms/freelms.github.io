@@ -91,6 +91,18 @@ describe('rules', () => {
     await assertSucceeds(deleteDoc(doc(admin.firestore(), 'tags/t6')));
   });
 
+  it('pageviews: anyone appends valid shapes, only admins read, never update', async () => {
+    const anon = env.unauthenticatedContext();
+    const alice = env.authenticatedContext('alice');
+    const admin = env.authenticatedContext('admin1', { email: 'shariqq.com@gmail.com' });
+    await assertSucceeds(setDoc(doc(anon.firestore(), 'pageviews/v1'), { path: '/', courseId: null, uid: null, ts: new Date() }));
+    await assertSucceeds(setDoc(doc(alice.firestore(), 'pageviews/v2'), { path: '/course/c1', courseId: 'c1', uid: 'alice', ts: new Date() }));
+    await assertFails(setDoc(doc(anon.firestore(), 'pageviews/v3'), { path: '/', evil: 1, ts: new Date() }));
+    await assertFails(setDoc(doc(anon.firestore(), 'pageviews/v4'), { path: 'x'.repeat(500), ts: new Date() }));
+    await assertFails(getDoc(doc(alice.firestore(), 'pageviews/v1')));
+    await assertSucceeds(getDoc(doc(admin.firestore(), 'pageviews/v1')));
+  });
+
   it('reviews: public read, enrolled write own, strangers blocked', async () => {
     const admin = env.authenticatedContext('admin1', { email: 'shariqq.com@gmail.com' });
     await assertSucceeds(setDoc(doc(admin.firestore(), 'courses/c9'), { title: 'C', status: 'published' }));

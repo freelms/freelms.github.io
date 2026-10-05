@@ -105,5 +105,17 @@ service cloud.firestore {
       allow read: if signedIn();
       allow write: if isAdmin() || signedIn();
     }
+
+    // First-party traffic analytics: anyone may append a view event with a
+    // strict shape (abuse-bounded: once per path per session client-side).
+    // Only admins can read them back; events are immutable.
+    match /pageviews/{id} {
+      allow read: if isAdmin();
+      allow create: if request.resource.data.keys().hasOnly(['path', 'courseId', 'uid', 'ts'])
+        && request.resource.data.path is string
+        && request.resource.data.path.size() > 0
+        && request.resource.data.path.size() < 200;
+      allow update, delete: if false;
+    }
   }
 }

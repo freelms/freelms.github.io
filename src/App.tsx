@@ -12,6 +12,7 @@ import { initSentry } from './lib/sentry';
 import { initAppCheck } from './lib/appcheck';
 import { useSWUpdate } from './hooks/useSWUpdate';
 import { useVersionCheck } from './hooks/useVersionCheck';
+import { usePageviews } from './hooks/usePageviews';
 import type { Course, Lesson } from './types';
 import Login from './pages/Login';
 import Home from './pages/Home';
@@ -49,6 +50,7 @@ export default function App() {
         <ToastProvider>
           <HashRouter>
             <ErrorBoundary>
+              <TrafficBeacon />
               <Navbar onSearch={() => setPalette(true)} />
               <AnnouncementBanner />
               <main className="min-h-[70vh]">
@@ -80,6 +82,11 @@ export default function App() {
     </ThemeProvider>
   );
 }
+function TrafficBeacon() {
+  usePageviews();
+  return null;
+}
+
 function PaletteSync({ setCourses }: { setCourses: (c: Course[]) => void }) {
   useEffect(() => {
     try {
