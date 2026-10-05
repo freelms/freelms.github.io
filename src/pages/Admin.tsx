@@ -9,6 +9,7 @@ import { validateQuizJson } from '../components/Quiz';
 import { SAMPLE_QUIZ_JSON, SAMPLE_COURSE_JSON, QUIZ_AI_PROMPT, COURSE_AI_PROMPT } from '../lib/samples';
 
 import { ModerationTab } from '../components/Comments';
+import { RebuildSite } from '../components/RebuildSite';
 import { TrafficTab } from '../components/TrafficTab';
 import { StudentDashboard } from '../components/StudentDashboard';
 import { TagsTab } from '../components/TagsTab';
@@ -62,6 +63,7 @@ export default function Admin() {
           {clearing ? 'Clearing…' : '🧹 Clear site caches'}
         </button>
       </div>
+      <RebuildSite />
       <div className="mt-2 flex gap-1.5 overflow-x-auto" role="tablist">
         {tabs.map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`chip !px-3 !py-1.5 capitalize ${tab === t ? '!bg-indigo-600 !text-white' : ''}`}>{t}</button>

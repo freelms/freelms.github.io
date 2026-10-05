@@ -91,8 +91,7 @@ describe('rules', () => {
     await assertSucceeds(deleteDoc(doc(admin.firestore(), 'tags/t6')));
   });
 
-  it('pageviews: anyone appends valid shapes, only admins read, never update', async () => {
-    const anon = env.unauthenticatedContext();
+  it('pageviews: anyone appends valid shapes, only admins read, never update', async () => {    const anon = env.unauthenticatedContext();
     const alice = env.authenticatedContext('alice');
     const admin = env.authenticatedContext('admin1', { email: 'shariqq.com@gmail.com' });
     await assertSucceeds(setDoc(doc(anon.firestore(), 'pageviews/v1'), { path: '/', courseId: null, uid: null, ts: new Date() }));
@@ -114,5 +113,14 @@ describe('rules', () => {
     await assertFails(setDoc(doc(alice.firestore(), 'courses/c9/reviews/alice'), { uid: 'alice', rating: 9, text: 'Bad rating' }));
     const anon = env.unauthenticatedContext();
     await assertSucceeds(getDoc(doc(anon.firestore(), 'courses/c9/reviews/alice')));
+  });
+
+  it('config: admin-only read/write', async () => {
+    const alice = env.authenticatedContext('alice');
+    const admin = env.authenticatedContext('admin1', { email: 'shariqq.com@gmail.com' });
+    await assertFails(getDoc(doc(alice.firestore(), 'config/deploy')));
+    await assertFails(setDoc(doc(alice.firestore(), 'config/deploy'), { githubToken: 'x' }));
+    await assertSucceeds(setDoc(doc(admin.firestore(), 'config/deploy'), { githubToken: 'x' }));
+    await assertSucceeds(getDoc(doc(admin.firestore(), 'config/deploy')));
   });
 });

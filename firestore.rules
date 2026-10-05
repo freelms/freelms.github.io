@@ -24,6 +24,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Admin-only app config (e.g. GitHub deploy token for on-demand rebuilds).
+    match /config/{docId} {
+      allow read, write: if isAdmin();
+    }
+
     match /courses/{courseId} {
       // published courses readable by anyone (public catalog + SEO); drafts/archived need login+enrollment or admin.
       // NOTE: get/list are split on purpose. List queries MUST constrain
