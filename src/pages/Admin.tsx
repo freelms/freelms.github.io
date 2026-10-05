@@ -523,6 +523,15 @@ function QuizzesTab() {
           <label className="btn-ghost !py-1 text-xs cursor-pointer">Upload .json<input type="file" className="hidden" accept=".json" onChange={async (e) => { const f = e.target.files?.[0]; if (f) setRaw(await f.text()); }} /></label>
         </div>
         <textarea className="input min-h-[220px] font-mono text-xs" value={raw} onChange={(e) => setRaw(e.target.value)} aria-label="Quiz JSON" />
+        <details className="rounded-lg bg-slate-50 p-2 text-xs dark:bg-slate-800/60">
+          <summary className="cursor-pointer font-medium">Where do transcripts come from?</summary>
+          <p className="mt-1 text-slate-600 dark:text-slate-300">
+            YouTube → video page → description → <strong>Show transcript</strong> → copy. Free and reliable.
+            For bulk work, the free <code>youtube-transcript-api</code> package pulls captions from a URL
+            (needs existing captions; fails on private/age-restricted videos). There is no official
+            YouTube API for transcripts — anything claiming one needs the channel owner's login.
+          </p>
+        </details>
         <select className="input" value={lessonId} onChange={(e) => setLessonId(e.target.value)} aria-label="Attach to lesson (optional)">
           <option value="">Full-course quiz (no lesson)</option>
           {lessons.map((l) => <option key={l.id} value={l.id}>Quick check: {l.title}</option>)}
@@ -887,14 +896,23 @@ function ImportTab() {
       </div>
       <textarea className="input min-h-[240px] font-mono text-xs" value={raw} onChange={(e) => setRaw(e.target.value)} aria-label="Course JSON" />
       <PreviewCounts raw={raw} />
+      <details className="rounded-lg bg-slate-50 p-2 text-xs dark:bg-slate-800/60">
+        <summary className="cursor-pointer font-medium">How to get a video transcript for the AI prompt</summary>
+        <ol className="mt-1 list-decimal space-y-1 pl-5 text-slate-600 dark:text-slate-300">
+          <li>Open the video on YouTube → expand the description → <strong>Show transcript</strong> → copy the text (timestamps optional).</li>
+          <li>No transcript button? The video has no captions — pick another video or summarize it yourself.</li>
+          <li>Bulk/automation: the free <code>youtube-transcript-api</code> package (Python/JS) pulls captions from a URL — works for captioned public videos, fails on private/age-restricted ones.</li>
+        </ol>
+      </details>
       <button className="btn-primary" onClick={async () => {
         if (!db) return;
         try {
           const j = JSON.parse(raw);
           const cref = await addDoc(collection(db, 'courses'), {
-            title: j.title, description: j.description, topic: j.topic, instructor: j.instructor,
+            title: j.title, description: j.description, instructor: j.instructor,
             thumbnail: j.thumbnail ?? '', level: j.level ?? 'Beginner', outcomes: j.outcomes ?? [],
             credits: j.credits ?? [], schedule: j.schedule ?? [], status: 'draft',
+            tagSlugs: [], tags: [],
             lessonCount: (j.lessons ?? []).length, createdAt: serverTimestamp()
           });
           for (let i = 0; i < (j.lessons ?? []).length; i++) {
@@ -908,7 +926,23 @@ function ImportTab() {
             if (!v.ok) throw new Error('Quiz invalid: ' + v.errors.join('; '));
             await addDoc(collection(db, 'courses', cref.id, 'quizzes'), (v as any).quiz);
           }
-          push(`Imported course ${cref.id}`);
+          // Resolve AI-suggested tag names/slugs against existing tags (never invent).
+          const wanted: string[] = [...new Set(((j.tags ?? []) as string[]).map((s) => String(s).toLowerCase().trim()).filter(Boolean))].slice(0, 8);
+          if (wanted.length) {
+            const ts = await getDocs(collection(db, 'tags'));
+            const bySlug = new Map(ts.docs.map((d) => [((d.data() as any).slug ?? d.id).toLowerCase(), d.data() as any]));
+            const byName = new Map(ts.docs.map((d) => [String((d.data() as any).name ?? '').toLowerCase(), d.data() as any]));
+            const matched = wanted.map((w) => bySlug.get(w) ?? byName.get(w)).filter(Boolean);
+            const skipped = wanted.filter((w) => !bySlug.get(w) && !byName.get(w));
+            if (matched.length) {
+              await updateDoc(doc(db, 'courses', cref.id), {
+                tagSlugs: matched.map((t: any) => t.slug),
+                tags: matched.map((t: any) => ({ slug: t.slug, name: t.name, color: t.color }))
+              });
+            }
+            if (skipped.length) push(`Tags skipped (create them in Tags tab first): ${skipped.join(', ')}`);
+          }
+          push(`Imported course ${cref.id} — attach tags in the course form`);
         } catch (e: any) { push('Import failed: ' + e.message); }
       }}>Validate + import (batched)</button>
     </div>
