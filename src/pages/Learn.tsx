@@ -14,6 +14,7 @@ import { updateStreak } from '../components/streak';
 import { LessonComments } from '../components/Comments';
 import { AnnouncementBanner } from '../components/Banner';
 import { sortLessons } from '../lib/lessons';
+import { AsyncButton } from '../components/AsyncButton';
 
 type Tab = 'overview' | 'videos' | 'timetable' | 'quizzes' | 'notes';
 
@@ -162,6 +163,24 @@ export default function Learn() {
     const xs = attempts.filter((a) => a.quizId === qid);
     return xs.length ? xs.reduce((m, a) => Math.max(m, a.score), 0) : null;
   };
+  const passedQuiz = (qz: Quiz) => attempts.some((a) => a.quizId === qz.id && a.score >= qz.passingScore);
+  const lessonsDone = done.length === lessons.length && lessons.length > 0;
+  const eligible = lessonsDone && quizzes.every(passedQuiz);
+  const completed = Boolean((enroll as any)?.completedAt);
+
+  const finishCourse = async () => {
+    if (!db || !user || !id || !eligible || completed) return;
+    await setDoc(doc(db, 'users', user.uid, 'enrollments', id),
+      { completedAt: serverTimestamp(), progressPercent: 100, lastActiveAt: serverTimestamp() }, { merge: true });
+    setEnroll((e) => (e ? { ...e, completedAt: new Date() } as Enrollment : e));
+    try {
+      const { increment, updateDoc } = await import('firebase/firestore');
+      await updateDoc(doc(db, 'stats', id), { completionCount: increment(1) }).catch(() => {});
+    } catch { /* ignore */ }
+    const { trackEvent } = await import('../lib/analytics');
+    trackEvent('course_complete', { course_id: id });
+    push('Course completed! 🎉');
+  };
   // notes autosave
   const saveNote = async (lid: string, content: string) => {
     if (!db || !user || !id) return;
@@ -189,6 +208,58 @@ export default function Learn() {
             </p>
           )}
         </div>
+      </div>
+
+      <div className="card mt-3 p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">To complete this course</p>
+            <ul className="mt-1.5 space-y-1 text-sm">
+              <li className="flex items-center gap-2">
+                <span className={`grid h-5 w-5 place-items-center rounded-full text-[11px] font-bold text-white ${lessonsDone ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                  {lessonsDone ? '✓' : `${done.length}/${lessons.length}`}
+                </span>
+                <button className="hover:underline" onClick={() => setTab('videos')}>Watch all lessons</button>
+              </li>
+              {quizzes.map((qz) => {
+                const ok = passedQuiz(qz);
+                const best = bestFor(qz.id);
+                return (
+                  <li key={qz.id} className="flex items-center gap-2">
+                    <span className={`grid h-5 w-5 place-items-center rounded-full text-[11px] font-bold text-white ${ok ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                      {ok ? '✓' : '!'}
+                    </span>
+                    <button className="hover:underline" onClick={() => { setActiveQuiz(qz); setTab('quizzes'); }}>
+                      Pass “{qz.title}”{best !== null && ` (best ${best}%, needs ${qz.passingScore}%)`}
+                    </button>
+                  </li>
+                );
+              })}
+              {quizzes.length === 0 && (
+                <li className="text-xs text-slate-500">No quizzes in this course — lessons alone complete it.</li>
+              )}
+            </ul>
+          </div>
+          <div className="w-full sm:w-auto">
+            {completed ? (
+              <p className="rounded-xl bg-emerald-50 px-4 py-2.5 text-center text-sm font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                ✓ Course completed
+              </p>
+            ) : (
+              <AsyncButton
+                className="btn-primary w-full !py-2.5 sm:w-auto"
+                disabled={!eligible}
+                title={eligible ? 'Finish the course' : 'Finish all lessons and pass every quiz first'}
+                onPress={finishCourse}
+              >
+                Finish course
+              </AsyncButton>
+            )}
+          </div>
+        </div>
+        {!completed && !eligible && (
+          <p className="mt-2 text-xs text-slate-500">Complete the checklist above to unlock the Finish button.</p>
+        )}
       </div>
 
       <div className="mt-3 flex gap-1.5 overflow-x-auto" role="tablist">

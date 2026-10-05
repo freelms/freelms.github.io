@@ -21,6 +21,8 @@ export default function CourseDetail() {
   const [enrolled, setEnrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [prereqs, setPrereqs] = useState<Course[]>([]);
+  const [doneCount, setDoneCount] = useState(0);
+  const [pendingQuizzes, setPendingQuizzes] = useState<{ id: string; title: string }[]>([]);
   const { user } = useAuth();
   const { push } = useToast();
   const nav = useNavigate();
@@ -69,6 +71,30 @@ export default function CourseDetail() {
         } catch { setLessons([]); }
         const en = await getDoc(doc(db, 'users', user.uid, 'enrollments', id));
         setEnrolled(en.exists());
+        if (en.exists()) {
+          setDoneCount(((en.data() as any).completedLessons ?? []).length);
+          const [qs, at] = await Promise.all([
+            getDocs(collection(db, 'courses', id, 'quizzes')),
+            getDocs(collection(db, 'users', user.uid, 'quizAttempts'))
+          ]);
+          const passed = new Set(
+            at.docs
+              .filter((d) => {
+                const a = d.data() as any;
+                if (a.courseId !== id) return false;
+                if (a.passed) return true;
+                const qz = qs.docs.find((x) => x.id === a.quizId)?.data() as any;
+                return !!qz && a.score >= (qz.passingScore ?? 70);
+              })
+              .map((d) => (d.data() as any).quizId)
+          );
+          setPendingQuizzes(
+            qs.docs
+              .map((d) => ({ id: d.id, ...(d.data() as any) }))
+              .filter((q: any) => !passed.has(q.id))
+              .map((q: any) => ({ id: q.id, title: q.title }))
+          );
+        }
       } else {
         setLessons([]);
       }
@@ -155,6 +181,45 @@ export default function CourseDetail() {
           </div>
         </aside>
       </div>
+
+      {enrolled && (() => {
+        const total = lessons.length || course.lessonCount || 0;
+        const left = Math.max(0, total - doneCount);
+        const allDone = total > 0 && left === 0 && pendingQuizzes.length === 0;
+        return (
+          <div className={`card mt-4 border-l-4 p-4 ${allDone ? 'border-l-emerald-500' : 'border-l-amber-400'}`}>
+            {allDone ? (
+              <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                ✓ Everything done — open the course and hit <strong>Finish course</strong> to close it out.
+              </p>
+            ) : (
+              <>
+                <p className="text-sm font-bold">To finish this course you still need:</p>
+                <ul className="mt-1.5 space-y-1 text-sm">
+                  {left > 0 && (
+                    <li>
+                      <Link to={`/learn/${course.id}`} className="text-indigo-600 hover:underline">
+                        Watch {left} remaining lesson{left === 1 ? '' : 's'}
+                      </Link>
+                    </li>
+                  )}
+                  {pendingQuizzes.map((q) => (
+                    <li key={q.id}>
+                      <Link to={`/learn/${course.id}`} className="text-indigo-600 hover:underline">
+                        Pass quiz “{q.title}”
+                      </Link>
+                    </li>
+                  ))}
+                  {total === 0 && pendingQuizzes.length === 0 && (
+                    <li className="text-slate-500">Course content is being prepared — check back soon.</li>
+                  )}
+                </ul>
+              </>
+            )}
+            <Link to={`/learn/${course.id}`} className="btn-ghost mt-3 !py-1.5 text-xs">Go to course →</Link>
+          </div>
+        );
+      })()}
 
       {prereqs.length > 0 && (
         <div className="card mt-4 p-5">

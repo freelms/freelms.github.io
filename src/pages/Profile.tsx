@@ -28,7 +28,7 @@ export default function Profile() {
       if (done >= 1) badges.push('First lesson');
       if (passed >= 1) badges.push('First quiz passed');
       if (streakCount(days) >= 7) badges.push('7-day streak');
-      const completedCourses = es.docs.filter((d) => ((d.data() as any).progressPercent ?? 0) >= 100).length;
+      const completedCourses = es.docs.filter((d) => (d.data() as any).completedAt || ((d.data() as any).progressPercent ?? 0) >= 100).length;
       if (completedCourses >= 1) badges.push('First course completed');
       setStats({ enrolled: es.size, done, passed, streak: streakCount(days), badges });
     })();

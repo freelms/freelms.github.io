@@ -95,6 +95,7 @@ export interface Enrollment {
   lastLessonId?: string;
   lastTime?: number;
   positions?: Record<string, number>;
+  completedAt?: any;
   lastActiveAt?: any;
 }
 
